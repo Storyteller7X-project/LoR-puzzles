@@ -184,6 +184,7 @@
           <span class="chip">Mana <span class="pips" id="manaPips"></span></span>
           <span class="chip">Spell <span class="pips" id="spellPips"></span></span>
           <span class="chip" id="tokenChip">Attack Token: <b>&mdash;</b></span>
+          <span class="chip" id="nextDrawChip" style="display:none">Next draw: <b>&mdash;</b></span>
         </div>
 
         <div class="hand-wrap">
@@ -224,7 +225,7 @@ const CARDS = {
 
 /* Scripted-puzzle cards — real Data Dragon codes (tokens stay text) */
 const SCARDS = {
-  karma:{name:'Karma Lv2',type:'unit',cost:5,power:5,health:4,code:'01IO041',set:1,keywords:['Lv2']},
+  karma:{name:'Karma Lv2',type:'unit',cost:5,power:5,health:4,code:'01IO041T1',set:1,keywords:['Lv2']},
   senna:{name:'Senna',type:'unit',cost:5,power:4,health:4,code:'05SI009',set:5},
   field_musicians:{name:'Field Musicians',type:'unit',cost:4,power:1,health:4,code:'04IO001',set:4,keywords:['1/3']},
   abom:{name:'Escaped Abomination',type:'unit',cost:0,power:4,health:3,code:'01SI048T1',set:1},
@@ -236,7 +237,7 @@ const SCARDS = {
   thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:'06SI027',set:6},
   absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:'01SI045',set:1,text:'Absorb allies; level Senna.'},
   lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:'04SI001',set:4},
-  soul_cleave:{name:'Soul Cleave',type:'spell',cost:4,code:'06SI045',set:6,text:'Senna Lv2 discount: 2 mana.'},
+  soul_cleave:{name:'Soul Cleave',type:'spell',cost:3,code:'06SI045',set:6,text:'Kill an ally to summon 2 Ephemeral copies of it. (Senna Lv2 discount: 2 mana.)'},
   go_hard:{name:'Go Hard',type:'spell',cost:1,code:'03SI016',set:3,text:'Senna Lv2: 0 mana. Pack Your Bags.'},
   darkness:{name:'Darkness',type:'spell',cost:3,code:'05SI029',set:5,text:'Bait \u2014 unused.'}
 };
@@ -244,8 +245,8 @@ const SCARDS = {
 const SCODE = {
   'Prey':null,
   'Field Musicians':{c:'04IO001',s:4},
-  'Senna':{c:'05SI009',s:5}, 'Senna Lv2':{c:'05SI009',s:5},
-  'Karma Lv2':{c:'01IO041',s:1},
+  'Senna':{c:'05SI009',s:5}, 'Senna Lv2':{c:'05SI009T1',s:5},
+  'Karma Lv2':{c:'01IO041T1',s:1},
   'Ravenous Butcher':{c:'01SI011',s:1},
   'Escaped Abomination':{c:'01SI048T1',s:1}
 };
@@ -266,8 +267,8 @@ const PUZZLES = [
   },
   {
     id:'normal', level:'Normal', name:'Karma Combo OTK', mode:'scripted',
-    gif:'', artCode:'01IO041', artSet:1,  /* Karma art (base; level-2 code unverified) */
-    enemyNexus:20, myNexus:20, gems:5, spell:3,
+    gif:'', artCode:'01IO041T1', artSet:1,  /* Karma level-2 art (verified: 01IO041T1) */
+    enemyNexus:20, myNexus:20, gems:5, spell:3, nextDraw:'soul_cleave',
     ourBoard:[ {name:'Prey',p:0,h:1}, {name:'Field Musicians',p:1,h:4}, {name:'Senna',p:4,h:4,kw:['Quick Attack','0/3']} ],
     enemyBoard:[ {name:'Ravenous Butcher',p:3,h:2}, {name:'Escaped Abomination',p:4,h:3} ],
     hand:['karma','tag_out','fading_memories','thread_needle','absorb_soul','lambs_respite','go_hard','go_hard','go_hard','darkness'],
@@ -281,7 +282,7 @@ const PUZZLES = [
       {card:'thread_needle',picks:[{side:'ally',name:'Ravenous Butcher',prompt:'Thread the Needle \u2014 kill an ally'},{side:'enemy',name:'Escaped Abomination',prompt:'Thread the Needle \u2014 deal its Power to an enemy'}],cap:'Thread the Needle: kill our Butcher, deal 3 to their Abomination. Senna level-up 2/3. 5 mana.',run:()=>{ sDelHand('thread_needle'); sDelUnit('Ravenous Butcher'); const ab=S.enemyBoard.find(u=>u.name.indexOf('Escaped')===0); if(ab){ab.health-=3; if(ab.health<=0)S.enemyBoard=S.enemyBoard.filter(u=>u!==ab);} const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn)sn.keywords=['Quick Attack','2/3']; sMana(4,1); }},
       {card:'absorb_soul',picks:[{side:'ally',name:'Field Musicians',prompt:'Absorb Soul \u2014 drain 4 from an ally'}],cap:'Absorb Soul on Field Musicians \u2192 Senna levels up. Board: Senna Lv2 + Karma Lv2. 4 mana.',run:()=>{ sDelHand('absorb_soul'); S.board=S.board.filter(u=>u.name.indexOf('Senna')===0||u.name.indexOf('Karma')===0); const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn){sn.name='Senna Lv2';sn.power=5;sn.health=5;sn.keywords=['Lv2'];} sMana(4,0); }},
       {card:'lambs_respite',cap:"Lamb's Respite \u2192 weakest ally (here Karma 5/4). 2 mana.",run:()=>{ sDelHand('lambs_respite'); const w=sWeakestAlly(); if(w)w.keywords=(w.keywords||[]).concat('Respite'); sMana(2,0); }},
-      {card:'soul_cleave',picks:[{side:'ally',name:'Karma',prompt:'Soul Cleave \u2014 target an ally'}],cap:'Soul Cleave on Karma (Lamb\u2019s Respite \u2192 copies). Board: 1 Senna + 5 Karma. 0 mana.',run:()=>{ sDelHand('soul_cleave'); for(let i=0;i<4;i++) sSummon('Karma Lv2',5,4,['Lv2']); sMana(0,0); }},
+      {card:'soul_cleave',picks:[{side:'ally',name:'Karma',prompt:'Soul Cleave \u2014 target an ally'}],cap:'Soul Cleave on Karma: Lamb\u2019s Respite \u2192 she can\u2019t die, Karma doubles it \u2192 4 Ephemeral Karma. Board: 1 Senna + 5 Karma. 0 mana.',run:()=>{ sDelHand('soul_cleave'); for(let i=0;i<4;i++) sSummon('Karma Lv2',5,4,['Lv2','Ephemeral']); sMana(0,0); }},
       {card:'go_hard',cap:'Go Hard #1 (0 mana). It casts 6\u00d7: 1 Pack Your Bags. Enemy 20 \u2192 15.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=15; }},
       {card:'go_hard',cap:'Go Hard #2. 2 Pack Your Bags. Enemy 15 \u2192 5.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=5; }},
       {card:'go_hard',cap:'Go Hard #3. 1 Pack Your Bags. Enemy 5 \u2192 0. LETHAL!',run:()=>{ sDelHand('go_hard'); S.enemyNexus=0; }}
@@ -433,6 +434,10 @@ function render(){
     return '<div class="card '+(afford?'':'disabled')+'" data-hid="'+h.hid+'" title="'+esc(c.text||'')+'"><div class="frame"><div class="cost '+(sp?'spellable':'')+'">'+c.cost+'</div>'+artEl(c.code,c.set,c.name)+kwTags(c.keywords)+((c.type==='unit')?statBadges(c):'')+'</div><div class="nm">'+esc(c.name)+'</div></div>';}).join('');
   if(!REPLAY) hand.querySelectorAll('.card:not(.disabled)').forEach(el=>el.onclick=()=>(S.scripted?playScripted:playFromHand)(+el.dataset.hid));
 
+  const ndc=document.getElementById('nextDrawChip');
+  if(ndc){ if(S.scripted&&S.nextDraw&&SCARDS[S.nextDraw]){ ndc.style.display=''; ndc.innerHTML='Next draw: <b class="token-on">'+esc(SCARDS[S.nextDraw].name.toUpperCase())+'</b>'; }
+    else { ndc.style.display='none'; } }
+
   const et=document.getElementById('endTurnBtn'),ab=document.getElementById('attackBtn');
   if(S.scripted){ et.style.display='none'; ab.style.display='none'; }
   else { et.style.display=(S.round===0)?'block':'none'; et.disabled=(S.round!==0||S.over||REPLAY); ab.style.display=''; ab.disabled=!(S.attackToken&&!S.over&&!REPLAY&&S.board.length>0); }
@@ -448,13 +453,13 @@ function sMana(g,sp){S.manaMax=g;S.manaSpent=0;S.spellMana=sp;}
 function sWeakestAlly(){ return S.board.slice().sort((a,b)=>(a.health-b.health)||(a.power-b.power))[0]; }
 function sFieldTick(){ const fm=S.board.find(x=>x.name.indexOf('Field')===0 && typeof x.fmCount==='number'); if(!fm)return;
   fm.fmCount++;
-  if(fm.fmCount>=3){ fm.keywords=(fm.keywords||[]).filter(k=>!/\/3$/.test(k)); fm.fmCount=null; S.spellMana=3; sAddHand('soul_cleave'); log('\u266a Field Musicians activates: spell mana refilled & drew Soul Cleave.','good'); }
+  if(fm.fmCount>=3){ fm.keywords=(fm.keywords||[]).filter(k=>!/\/3$/.test(k)); fm.fmCount=null; S.spellMana=3; sAddHand('soul_cleave'); S.nextDraw=null; log('\u266a Field Musicians activates: spell mana refilled & drew Soul Cleave.','good'); }
   else { fm.keywords=[fm.fmCount+'/3']; } }
 function sSummon(name,p,h,kw){ const u=sMk(name,p,h,kw); S.board.push(u); sFieldTick(); return u; }
 function initScripted(p){
   S={uid:1,hid:1,scripted:true,over:false,selecting:null,combat:null,round:0,attackToken:false,nextSummonBuff:0,
      manaMax:p.gems,manaSpent:0,spellMana:p.spell,enemyNexus:p.enemyNexus,myNexus:p.myNexus,enemyStart:p.enemyNexus,
-     board:[],enemyBoard:[],hand:[],stepIdx:0,steps:p.steps};
+     board:[],enemyBoard:[],hand:[],stepIdx:0,steps:p.steps,nextDraw:p.nextDraw||null};
   CONFIG={enemyNexus:p.enemyNexus,myNexus:p.myNexus};
   (p.ourBoard||[]).forEach(u=>S.board.push(sMk(u.name,u.p,u.h,u.kw)));
   (p.enemyBoard||[]).forEach(u=>S.enemyBoard.push(sMk(u.name,u.p,u.h,u.kw)));
