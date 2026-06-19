@@ -222,10 +222,31 @@ const CARDS = {
   prey:{name:'Prey',code:'04SI004T3',set:4,type:'unit',cost:0,power:0,health:1,text:'',token:true}
 };
 
+/* Scripted-puzzle cards — text only, no art (code:null) */
+const SCARDS = {
+  karma:{name:'Karma Lv2',type:'unit',cost:5,power:5,health:4,code:null,keywords:['Lv2']},
+  senna:{name:'Senna',type:'unit',cost:0,power:0,health:3,code:null},
+  field_musicians:{name:'Field Musicians',type:'unit',cost:0,power:0,health:3,code:null,keywords:['1/3']},
+  abom:{name:'Escaped Abomination',type:'unit',cost:0,power:4,health:3,code:null},
+  butcher:{name:'Ravenous Butcher',type:'unit',cost:0,power:3,health:2,code:null},
+  xolaani:{name:'Xolaani',type:'unit',cost:0,power:7,health:7,code:null},
+  nasus:{name:'Nasus Lv2',type:'unit',cost:0,power:15,health:15,code:null,keywords:['Lv2']},
+  prey:{name:'Prey',type:'unit',cost:0,power:0,health:1,code:null},
+  tag_out:{name:'Tag Out',type:'spell',cost:2,code:null,text:'Recall an ally; make 2 Coins.'},
+  coins:{name:'Coins',type:'spell',cost:0,code:null,text:'Karma doubles \u2192 mana gems.'},
+  fading_memories:{name:'Fading Memories',type:'spell',cost:3,code:null,text:'Create a copy of a unit.'},
+  thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:null},
+  absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:null,text:'Absorb allies; level Senna.'},
+  lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:null},
+  soul_cleave:{name:'Soul Cleave',type:'spell',cost:4,code:null,text:'Senna Lv2 discount: 2 mana.'},
+  go_hard:{name:'Go Hard',type:'spell',cost:1,code:null,text:'Senna Lv2: 0 mana. Pack Your Bags.'},
+  darkness:{name:'Darkness',type:'spell',cost:4,code:null,text:'Bait \u2014 unused.'}
+};
+
 /* ===================== PUZZLES (level select) ===================== */
 const PUZZLES = [
   {
-    id:'beginner', level:'Beginner', name:"Beginner's puzzle",
+    id:'beginner', level:'Tutorial', name:"Beginner's puzzle",
     gif:'',                       /* optional: animated .gif URL for the menu card */
     artCode:'03SI007', artSet:3,  /* representative card art (Shroud of Darkness) */
     config:{
@@ -235,11 +256,33 @@ const PUZZLES = [
         {id:'wings_and_wave',count:1}, {id:'shroud_of_darkness',count:3} ],
       enemyBoard:[]
     }
+  },
+  {
+    id:'normal', level:'Normal', name:'Karma Combo OTK', mode:'scripted',
+    gif:'', artCode:'01SI011', artSet:1,
+    enemyNexus:20, myNexus:20, gems:5, spell:3,
+    ourBoard:[ {name:'Prey',p:0,h:1}, {name:'Field Musicians',p:1,h:4,kw:['1/3']}, {name:'Senna',p:4,h:4,kw:['Quick Attack','0/3']} ],
+    enemyBoard:[ {name:'Ravenous Butcher',p:3,h:2}, {name:'Escaped Abomination',p:4,h:3} ],
+    hand:['karma','tag_out','fading_memories','thread_needle','absorb_soul','lambs_respite','go_hard','go_hard','go_hard','darkness'],
+    steps:[
+      {card:'karma',cap:'Play Karma for 5 \u2014 it levels up (turn 10+). 3 spell mana left.',run:()=>{ sDelHand('karma'); S.board.push(sMk('Karma Lv2',5,4,['Lv2'])); const fm=S.board.find(u=>u.name.indexOf('Field')===0); if(fm)fm.keywords=['1/3']; sMana(0,3); }},
+      {card:'tag_out',cap:'Tag Out the Prey (recalled). Karma Lv2 makes 2 Coins. 1 spell mana left.',run:()=>{ sDelHand('tag_out'); sDelUnit('Prey'); sAddHand('prey'); sAddHand('coins'); sAddHand('coins'); sMana(0,1); }},
+      {card:'coins',cap:'Spend the last spell mana on Coins; Karma doubles them \u2192 4 mana gems.',run:()=>{ sDelHand('coins'); sDelHand('coins'); sMana(4,0); }},
+      {card:'prey',cap:'Replay the Prey for 0. Field Musicians 2/3.',run:()=>{ sDelHand('prey'); S.board.push(sMk('Prey',0,1)); const fm=S.board.find(u=>u.name.indexOf('Field')===0); if(fm)fm.keywords=['2/3']; }},
+      {card:'fading_memories',cap:'Fading Memories copies their Ravenous Butcher \u2014 play it by killing the Prey. Field Musicians activates: +3 spell mana & draw Soul Cleave. 7 mana.',run:()=>{ sDelHand('fading_memories'); sDelUnit('Prey'); S.board.push(sMk('Ravenous Butcher',3,2)); const fm=S.board.find(u=>u.name.indexOf('Field')===0); if(fm)fm.keywords=['Active']; sAddHand('soul_cleave'); sMana(4,3); }},
+      {card:'thread_needle',cap:'Thread the Needle on our Butcher & their Escaped Abomination. Senna level-up 2/3. 5 mana.',run:()=>{ sDelHand('thread_needle'); const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn){sn.keywords=['Quick Attack','2/3'];} sMana(4,1); }},
+      {card:'absorb_soul',cap:'Absorb Soul on Field Musicians \u2192 Senna levels up. Board: Senna Lv2 + Karma Lv2. 4 mana.',run:()=>{ sDelHand('absorb_soul'); S.board=S.board.filter(u=>u.name.indexOf('Senna')===0||u.name.indexOf('Karma')===0); const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn){sn.name='Senna Lv2';sn.power=5;sn.health=5;sn.keywords=['Lv2'];} sMana(4,0); }},
+      {card:'lambs_respite',cap:"Lamb's Respite on Karma Lv2 (5/4). 2 mana.",run:()=>{ sDelHand('lambs_respite'); const k=S.board.find(u=>u.name.indexOf('Karma')===0); if(k)k.keywords=['Lv2','Respite']; sMana(2,0); }},
+      {card:'soul_cleave',cap:'Soul Cleave on Karma (Senna Lv2 discount \u2192 2). Board: 1 Senna + 5 Karma. 0 mana.',run:()=>{ sDelHand('soul_cleave'); for(let i=0;i<4;i++) S.board.push(sMk('Karma Lv2',5,4,['Lv2'])); sMana(0,0); }},
+      {card:'go_hard',cap:'Go Hard #1 (0 mana). It casts 6\u00d7: 1 Pack Your Bags. Enemy 20 \u2192 15.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=15; }},
+      {card:'go_hard',cap:'Go Hard #2. 2 Pack Your Bags. Enemy 15 \u2192 5.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=5; }},
+      {card:'go_hard',cap:'Go Hard #3. 1 Pack Your Bags. Enemy 5 \u2192 0. LETHAL!',run:()=>{ sDelHand('go_hard'); S.enemyNexus=0; }}
+    ]
   }
 ];
 
 /* ===================== STATE ===================== */
-let CONFIG=null, S, REC=[], REPLAY=false, LIVE=null, SPEED=900;
+let CONFIG=null, S, REC=[], REPLAY=false, LIVE=null, SPEED=900, curP=null;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function expand(list){ const o=[]; (list||[]).forEach(e=>{ for(let i=0;i<e.count;i++) o.push(e.id); }); return o; }
 function newUnit(id){ const c=CARDS[id]; return {uid:S.uid++,id,name:c.name,code:c.code,set:c.set,power:c.power,health:c.health,keywords:[...(c.keywords||[])],buffed:false,fresh:true}; }
@@ -259,7 +302,7 @@ function startRound(i){ S.round=i;S.manaMax=CONFIG.rounds[i].mana;S.manaSpent=0;
 function manaAvail(){ return S.manaMax-S.manaSpent; }
 function canAfford(c){ return c.type==='unit'?manaAvail()>=c.cost:manaAvail()+S.spellMana>=c.cost; }
 function pay(c){ if(c.type==='unit'){S.manaSpent+=c.cost;return;} let n=c.cost;const fs=Math.min(S.spellMana,n);S.spellMana-=fs;n-=fs;S.manaSpent+=n; }
-function record(cap,type){ REC.push({cap,type,s:JSON.parse(JSON.stringify({round:S.round,manaMax:S.manaMax,manaSpent:S.manaSpent,spellMana:S.spellMana,attackToken:S.attackToken,enemyNexus:S.enemyNexus,myNexus:S.myNexus,board:S.board,enemyBoard:S.enemyBoard,combat:S.combat,hand:S.hand,nextSummonBuff:S.nextSummonBuff}))}); }
+function record(cap,type,dmg){ REC.push({cap,type,dmg,s:JSON.parse(JSON.stringify({round:S.round,manaMax:S.manaMax,manaSpent:S.manaSpent,spellMana:S.spellMana,attackToken:S.attackToken,enemyNexus:S.enemyNexus,myNexus:S.myNexus,board:S.board,enemyBoard:S.enemyBoard,combat:S.combat,hand:S.hand,nextSummonBuff:S.nextSummonBuff,scripted:S.scripted,stepIdx:S.stepIdx}))}); }
 
 function summon(id,side){
   side=side||'board'; const c=CARDS[id]; const u=newUnit(id);
@@ -372,12 +415,50 @@ function render(){
   setTimeout(()=>{S.board.concat(S.enemyBoard).forEach(u=>u.fresh=false);},360);
 
   const hand=document.getElementById('hand');
-  hand.innerHTML=S.hand.map(h=>{const c=CARDS[h.id];const afford=canAfford(c)&&!S.selecting&&!REPLAY&&!S.over;const sp=(c.type!=='unit');
+  hand.innerHTML=S.hand.map(h=>{const c=(S.scripted?SCARDS:CARDS)[h.id];const afford=S.scripted?(!S.over&&!REPLAY):(canAfford(c)&&!S.selecting&&!REPLAY&&!S.over);const sp=(c.type!=='unit');
     return '<div class="card '+(afford?'':'disabled')+'" data-hid="'+h.hid+'" title="'+esc(c.text||'')+'"><div class="frame"><div class="cost '+(sp?'spellable':'')+'">'+c.cost+'</div>'+artEl(c.code,c.set,c.name)+kwTags(c.keywords)+((c.type==='unit')?statBadges(c):'')+'</div><div class="nm">'+esc(c.name)+'</div></div>';}).join('');
-  if(!REPLAY) hand.querySelectorAll('.card:not(.disabled)').forEach(el=>el.onclick=()=>playFromHand(+el.dataset.hid));
+  if(!REPLAY) hand.querySelectorAll('.card:not(.disabled)').forEach(el=>el.onclick=()=>(S.scripted?playScripted:playFromHand)(+el.dataset.hid));
 
-  const et=document.getElementById('endTurnBtn');et.disabled=(S.round!==0||S.over||REPLAY);et.style.display=(S.round===0)?'block':'none';
-  document.getElementById('attackBtn').disabled=!(S.attackToken&&!S.over&&!REPLAY&&S.board.length>0);
+  const et=document.getElementById('endTurnBtn'),ab=document.getElementById('attackBtn');
+  if(S.scripted){ et.style.display='none'; ab.style.display='none'; }
+  else { et.style.display=(S.round===0)?'block':'none'; et.disabled=(S.round!==0||S.over||REPLAY); ab.style.display=''; ab.disabled=!(S.attackToken&&!S.over&&!REPLAY&&S.board.length>0); }
+}
+
+/* ===================== SCRIPTED PUZZLE ENGINE ===================== */
+function sMk(name,p,h,kw){return {uid:S.uid++,name,power:p,health:h,code:null,keywords:kw||[],fresh:true};}
+function sAddHand(id){S.hand.push({hid:S.hid++,id});}
+function sDelHand(id){const i=S.hand.findIndex(x=>x.id===id);if(i>=0)S.hand.splice(i,1);}
+function sDelUnit(name){const i=S.board.findIndex(u=>u.name.indexOf(name)===0);if(i>=0)S.board.splice(i,1);}
+function sMana(g,sp){S.manaMax=g;S.manaSpent=0;S.spellMana=sp;}
+function initScripted(p){
+  S={uid:1,hid:1,scripted:true,over:false,selecting:null,combat:null,round:0,attackToken:false,nextSummonBuff:0,
+     manaMax:p.gems,manaSpent:0,spellMana:p.spell,enemyNexus:p.enemyNexus,myNexus:p.myNexus,enemyStart:p.enemyNexus,
+     board:[],enemyBoard:[],hand:[],stepIdx:0,steps:p.steps};
+  CONFIG={enemyNexus:p.enemyNexus,myNexus:p.myNexus};
+  (p.ourBoard||[]).forEach(u=>S.board.push(sMk(u.name,u.p,u.h,u.kw)));
+  (p.enemyBoard||[]).forEach(u=>S.enemyBoard.push(sMk(u.name,u.p,u.h,u.kw)));
+  (p.hand||[]).forEach(id=>S.hand.push({hid:S.hid++,id}));
+  REC=[];REPLAY=false;LIVE=null;
+  document.getElementById('log').innerHTML='';
+  document.getElementById('goalHp').textContent=p.enemyNexus;
+  record('Starting board','start');
+  render();
+  log('Spell-combo lethal (no attack). Play the line to burn the Nexus from '+p.enemyNexus+' to 0.','gold');
+}
+function playScripted(hid){
+  if(S.over||REPLAY) return;
+  const h=S.hand.find(x=>x.hid===hid); if(!h) return;
+  const step=S.steps[S.stepIdx]; if(!step) return;
+  if(h.id!==step.card){ log('That is not the next step of the line.','bad'); return; }
+  const prev=S.enemyNexus;
+  step.run();
+  log('\u2726 '+step.cap, S.enemyNexus<prev?'gold':'good');
+  const dmg=prev-S.enemyNexus;
+  if(dmg>0) nexusHit(dmg);
+  S.stepIdx++;
+  record(step.cap, dmg>0?'attack':'play', dmg>0?dmg:undefined);
+  render();
+  if(S.enemyNexus<=0){ S.over=true; endScreen(true, S.enemyStart - Math.max(0,S.enemyNexus)); }
 }
 
 /* ===================== REPLAY ===================== */
@@ -390,7 +471,7 @@ async function replayAll(){
   if(REC.length<2){log('Nothing to replay yet — make some moves first.','bad');return;}
   enterReplay();
   for(let i=0;i<REC.length;i++){ showSnapshot(i);
-    if(REC[i].type==='attack'){ const nxt=REC[i+1]?REC[i+1].s.enemyNexus:REC[i].s.enemyNexus; const dmg=REC[i].s.enemyNexus-nxt; if(dmg>0){await wait(460);nexusHit(dmg);} }
+    if(REC[i].type==='attack'){ const dmg=(REC[i].dmg!==undefined)?REC[i].dmg:(REC[i].s.enemyNexus-(REC[i+1]?REC[i+1].s.enemyNexus:REC[i].s.enemyNexus)); if(dmg>0){await wait(460);nexusHit(dmg);} }
     await wait(SPEED); if(!REPLAY)return;
   }
   caption('Replay complete');await wait(1200);exitReplay();
@@ -401,7 +482,7 @@ function menuArt(p){ if(p.gif) return '<img alt="'+esc(p.name)+'" src="'+esc(p.g
 function buildMenu(){ const g=document.getElementById('puzzleGrid');
   g.innerHTML=PUZZLES.map((p,i)=>'<div class="puzzle-card" data-i="'+i+'"><div class="pa">'+menuArt(p)+'<div class="glow"></div><span class="lvl">'+esc(p.level)+'</span><div class="pinfo"><div class="pname">'+esc(p.name)+'</div><div class="pplay">Play \u25B6</div></div></div></div>').join('');
   g.querySelectorAll('.puzzle-card').forEach(el=>el.onclick=()=>startPuzzle(PUZZLES[+el.dataset.i])); }
-function startPuzzle(p){ CONFIG=p.config; document.getElementById('puzzleTitle').textContent=p.name; document.getElementById('menu').classList.remove('show'); init(); }
+function startPuzzle(p){ curP=p; document.getElementById('puzzleTitle').textContent=p.name; document.getElementById('menu').classList.remove('show'); if(p.mode==='scripted'){ initScripted(p); } else { CONFIG=p.config; init(); } }
 function showMenu(){ document.getElementById('menu').classList.add('show'); }
 
 /* ===================== MODALS / LOG ===================== */
@@ -411,7 +492,7 @@ function askModal(t,d,o){const ov=document.getElementById('overlay'),m=document.
 function endScreen(win,total){const ov=document.getElementById('overlay'),m=document.getElementById('modal');
   m.innerHTML='<div class="banner '+(win?'win':'lose')+'">'+(win?'LETHAL \u2726':'Not enough\u2026')+'</div><p>'+(win?('You dealt '+total+' to the Nexus (now '+S.enemyNexus+'). Puzzle solved!'):('You dealt '+total+'. Enemy Nexus still has '+S.enemyNexus+'.'))+'</p><div class="row"><button class="btn" id="mRep">&#9654; Watch Replay</button><button class="btn ghost" id="mReset">Try Again</button></div>';
   ov.classList.add('show');
-  document.getElementById('mReset').onclick=()=>{ov.classList.remove('show');init();};
+  document.getElementById('mReset').onclick=()=>{ov.classList.remove('show');if(curP)startPuzzle(curP);};
   document.getElementById('mRep').onclick=()=>{ov.classList.remove('show');replayAll();};
   log(win?('\u2605 LETHAL! Nexus at '+S.enemyNexus+'.'):('Attack for '+total+' was not enough.'),win?'good':'bad');}
 function log(t,cls){const l=document.getElementById('log');const p=document.createElement('p');if(cls)p.className=cls;p.textContent=t;l.appendChild(p);l.scrollTop=l.scrollHeight;}
@@ -419,7 +500,7 @@ function log(t,cls){const l=document.getElementById('log');const p=document.crea
 /* ===================== WIRES ===================== */
 document.getElementById('endTurnBtn').onclick=endTurn;
 document.getElementById('attackBtn').onclick=doAttack;
-document.getElementById('resetBtn').onclick=()=>{ if(CONFIG) init(); };
+document.getElementById('resetBtn').onclick=()=>{ if(curP) startPuzzle(curP); };
 document.getElementById('menuBtn').onclick=showMenu;
 document.getElementById('replayBtn').onclick=replayAll;
 document.getElementById('speedSel').onchange=function(){SPEED=parseInt(this.value);};
