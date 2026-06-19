@@ -1,599 +1,400 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LoR Lethal Puzzles</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Runeterra Meta — LND</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,560;9..144,640&family=Inter:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#070b0c;--bg2:#0c1416;--mist:#0f1d1f;--ghost:#7ef9d6;--ghost-dim:#3fb79a;--ghost-deep:#1c6b58;
-    --bone:#e6efe9;--blood:#e0463a;--blood-deep:#7d1f1a;--gold:#e7c45a;--line:rgba(126,249,214,.18);--card-bg:#0e1719;}
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{font-family:'Spectral',Georgia,serif;color:var(--bone);
-    background:radial-gradient(1200px 600px at 50% -10%,rgba(28,107,88,.25),transparent 60%),
-      radial-gradient(900px 500px at 10% 110%,rgba(20,40,42,.6),transparent 60%),var(--bg);
-    min-height:100vh;padding:18px clamp(10px,3vw,40px) 60px;position:relative;overflow-x:hidden;}
-  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");mix-blend-mode:overlay;}
-  .wrap{max-width:1180px;margin:0 auto;position:relative;z-index:1}
-  header{text-align:center;margin-bottom:12px}
-  header .kicker{font-family:'Cinzel';letter-spacing:.4em;font-size:11px;color:var(--ghost-dim);text-transform:uppercase}
-  header h1{font-family:'Cinzel';font-weight:900;font-size:clamp(24px,4.2vw,40px);color:var(--bone);text-shadow:0 0 22px rgba(126,249,214,.35);letter-spacing:.04em;margin:4px 0 2px}
-  header .obj{font-size:14px;color:#9fb6ad}
-  header .obj b{color:var(--gold)}
-  .board-grid{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start}
-  @media(max-width:920px){.board-grid{grid-template-columns:1fr}}
-  .panel{background:linear-gradient(180deg,var(--bg2),var(--mist));border:1px solid var(--line);border-radius:14px;padding:14px;position:relative}
-  .nexus-row{display:flex;justify-content:space-between;gap:14px;margin-bottom:12px}
-  .nexus{flex:1;border-radius:12px;padding:12px 14px;border:1px solid var(--line);position:relative;overflow:visible}
-  .nexus h3{font-family:'Cinzel';font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.8}
-  .nexus .hp{font-family:'Cinzel';font-weight:900;font-size:38px;line-height:1}
-  .nexus.enemy{background:radial-gradient(120% 120% at 50% 0,rgba(224,70,58,.18),transparent 70%)}
-  .nexus.enemy .hp{color:var(--blood);text-shadow:0 0 18px rgba(224,70,58,.45)}
-  .nexus.mine{background:radial-gradient(120% 120% at 50% 100%,rgba(126,249,214,.12),transparent 70%)}
-  .nexus.mine .hp{color:var(--ghost)}
-  .nexus.shake{animation:shake .5s}
-  @keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-7px)}30%{transform:translateX(6px)}45%{transform:translateX(-5px)}60%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
-  .hpbar{height:7px;border-radius:6px;background:rgba(255,255,255,.07);margin-top:8px;overflow:hidden}
-  .hpbar i{display:block;height:100%;transition:width .5s ease}
-  .nexus.enemy .hpbar i{background:linear-gradient(90deg,var(--blood-deep),var(--blood))}
-  .nexus.mine .hpbar i{background:linear-gradient(90deg,var(--ghost-deep),var(--ghost))}
-  .dmg-pop{position:absolute;top:6px;right:14px;font-family:'Cinzel';font-weight:900;font-size:30px;color:var(--blood);text-shadow:0 0 14px rgba(224,70,58,.7);pointer-events:none;animation:pop 1s ease forwards;z-index:5}
-  @keyframes pop{0%{opacity:0;transform:translateY(8px) scale(.7)}25%{opacity:1;transform:translateY(-6px) scale(1.15)}100%{opacity:0;transform:translateY(-40px) scale(1)}}
-  .status{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0;font-size:13px}
-  .chip{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-family:'Cinzel';letter-spacing:.06em}
-  .chip b{color:var(--ghost)}
-  .pips{display:inline-flex;gap:3px}
-  .pip{width:13px;height:13px;border-radius:50%;border:1px solid var(--ghost-deep)}
-  .pip.full{background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(231,196,90,.6)}
-  .pip.spell.full{background:var(--ghost);border-color:var(--ghost);box-shadow:0 0 8px rgba(126,249,214,.6)}
-  .token-on{color:var(--gold)!important}
-  .zone-label{font-family:'Cinzel';font-size:11px;letter-spacing:.22em;text-transform:uppercase;margin:2px 0 8px;display:flex;justify-content:space-between;align-items:center}
-  .zone-label.foe{color:#d98078}.zone-label.you{color:var(--ghost-dim)}.zone-label.field{color:var(--gold)}
-  .board{min-height:120px;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;border:1px dashed rgba(126,249,214,.14);border-radius:12px;padding:12px;background:rgba(0,0,0,.18);position:relative}
-  .board.foe{border-color:rgba(224,70,58,.22);background:rgba(40,8,8,.18)}
-  .board.empty::before{content:attr(data-empty);color:#5f7a72;font-style:italic;font-size:13px}
-  .unit.pickable{cursor:crosshair;outline:2px solid var(--gold);outline-offset:2px}.unit.pickable:hover{outline-color:var(--ghost)}
-  .nexus.pickable{cursor:crosshair;outline:2px solid var(--gold);outline-offset:3px;border-radius:10px}.nexus.pickable:hover{outline-color:var(--ghost)}
-  /* BATTLEFIELD */
-  .battlefield{min-height:96px;border-radius:12px;margin:6px 0;padding:10px;position:relative;
-    background:linear-gradient(180deg,rgba(40,8,8,.14),rgba(8,16,16,.18),rgba(20,40,42,.14));
-    border:1px solid rgba(231,196,90,.18);display:flex;gap:14px;justify-content:center;align-items:stretch;overflow:hidden}
-  .battlefield::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:1px;background:repeating-linear-gradient(90deg,rgba(231,196,90,.35) 0 8px,transparent 8px 16px)}
-  .battlefield.empty{align-items:center;justify-content:center}
-  .lane{display:flex;flex-direction:column;gap:18px;align-items:center;position:relative;z-index:2}
-  .lane .blk .unit{animation:marchDown .42s ease}
-  .lane .atk .unit{animation:marchUp .42s ease}
-  @keyframes marchUp{from{transform:translateY(70px);opacity:.15}to{transform:none;opacity:1}}
-  @keyframes marchDown{from{transform:translateY(-70px);opacity:.15}to{transform:none;opacity:1}}
-  .noblk{width:96px;height:128px;border:1px dashed rgba(126,249,214,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#5f7a72;font-style:italic;font-size:10px;text-align:center;padding:6px}
-  /* CARDS / UNITS */
-  .card,.unit{width:96px;border-radius:10px;background:var(--card-bg);border:1px solid var(--line);position:relative;overflow:hidden;flex:0 0 auto}
-  .card{width:94px;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
-  .card:hover{transform:translateY(-6px);box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 18px rgba(126,249,214,.18)}
-  .card.disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.5)}.card.disabled:hover{transform:none;box-shadow:none}
-  .unit{transition:transform .35s cubic-bezier(.4,1.4,.5,1),opacity .35s ease}
-  .unit.hit{animation:hitflash .35s}
-  @keyframes hitflash{0%,100%{filter:none}50%{filter:brightness(1.9) drop-shadow(0 0 10px var(--blood))}}
-  .unit.dying{opacity:0;transform:scale(.55) rotate(-8deg)}
-  .unit.fresh{animation:rise .35s ease}
-  @keyframes rise{from{transform:translateY(12px) scale(.9);opacity:0}to{transform:none;opacity:1}}
-  .art{aspect-ratio:3/4;width:100%;object-fit:cover;display:block;background:#0a1314}
-  .art.fallback{display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Cinzel';font-size:9px;color:var(--ghost-dim);padding:5px;line-height:1.25;aspect-ratio:3/4}
-  .cost{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#1b1404;font-family:'Cinzel';font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(231,196,90,.5);z-index:3}
-  .cost.spellable{background:linear-gradient(135deg,var(--gold),var(--ghost))}
-  /* live power/health badges overlay the printed numbers on the card art */
-  .frame{position:relative;display:block}
-  .pwr,.hlt{position:absolute;bottom:3px;width:25px;height:25px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cinzel';font-weight:900;font-size:14px;z-index:3;background:radial-gradient(circle at 50% 38%,#11191b,#05090a 75%);box-shadow:0 1px 4px #000}
-  .pwr{left:3px;color:var(--gold);border:1px solid rgba(231,196,90,.8);text-shadow:0 0 6px rgba(231,196,90,.6)}
-  .hlt{right:3px;color:#fff;border:1px solid rgba(255,255,255,.6)}
-  .foe .hlt{color:#ffd0cb;border-color:rgba(224,70,58,.75)}
-  .buffed .pwr{color:#9dffe0;border-color:#9dffe0}
-  .nm{font-size:8.5px;text-align:center;padding:4px 3px;font-family:'Cinzel';color:var(--bone);border-top:1px solid var(--line);min-height:24px;display:flex;align-items:center;justify-content:center;line-height:1.1}
-  .kw{position:absolute;top:4px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;gap:3px;justify-content:center;align-items:center;z-index:2;max-width:90%}
-  .kw span{font-size:9px;font-family:'Cinzel';font-weight:700;letter-spacing:.03em;background:rgba(8,14,16,.92);color:var(--ghost);padding:2px 6px;border-radius:5px;border:1px solid rgba(126,249,214,.55);text-shadow:0 0 5px rgba(126,249,214,.5)}
-  .foe .kw span{background:rgba(20,6,6,.92);color:#ffb0a9;border-color:rgba(224,70,58,.6);text-shadow:0 0 5px rgba(224,70,58,.5)}
-  .hand-wrap{margin-top:14px}
-  .hand{display:flex;flex-wrap:wrap;gap:10px;padding-top:6px}
-  .side h3{font-family:'Cinzel';font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ghost-dim);margin-bottom:8px}
-  .btn{width:100%;font-family:'Cinzel';font-weight:700;letter-spacing:.06em;border:1px solid var(--ghost-deep);background:linear-gradient(180deg,rgba(126,249,214,.14),rgba(126,249,214,.04));color:var(--ghost);padding:10px;border-radius:10px;cursor:pointer;margin-bottom:8px;font-size:12.5px;transition:.15s}
-  .btn:hover:not(:disabled){background:rgba(126,249,214,.2);box-shadow:0 0 16px rgba(126,249,214,.25)}
-  .btn:disabled{opacity:.35;cursor:not-allowed}
-  .btn.attack{border-color:var(--blood-deep);background:linear-gradient(180deg,rgba(224,70,58,.18),rgba(224,70,58,.05));color:#ff8b80}
-  .btn.attack:hover:not(:disabled){background:rgba(224,70,58,.28);box-shadow:0 0 16px rgba(224,70,58,.3)}
-  .btn.ghost{border-color:var(--line);background:transparent;color:#8fa9a0}
-  .btnrow{display:flex;gap:6px;margin-bottom:8px}.btnrow .btn{margin:0}
-  .log{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:10px;padding:10px;height:200px;overflow-y:auto;font-size:12.5px;line-height:1.5;color:#a9c2b9}
-  .log p{margin-bottom:4px;padding-left:12px;position:relative}
-  .log p::before{content:"\203A";position:absolute;left:0;color:var(--ghost-deep)}
-  .log p.good{color:var(--ghost)}.log p.bad{color:#ff9088}.log p.gold{color:var(--gold)}
-  .overlay{position:fixed;inset:0;background:rgba(3,7,7,.82);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
-  .overlay.show{display:flex}
-  .modal{background:linear-gradient(180deg,#0d1819,#0a1213);border:1px solid var(--ghost-deep);border-radius:16px;padding:24px;max-width:520px;width:100%;text-align:center;box-shadow:0 0 50px rgba(126,249,214,.18)}
-  .modal h2{font-family:'Cinzel';color:var(--ghost);font-size:20px;margin-bottom:6px}
-  .modal p{color:#a9c2b9;font-size:14px;margin-bottom:16px}
-  .modal .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-  .modal .btn{width:auto;min-width:130px;margin:0}
-  .banner{font-family:'Cinzel';font-weight:900;font-size:30px;margin-bottom:8px}
-  .banner.win{color:var(--ghost);text-shadow:0 0 24px rgba(126,249,214,.5)}.banner.lose{color:var(--blood)}
-  .cap{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:rgba(8,16,16,.92);border:1px solid var(--ghost-deep);color:var(--ghost);font-family:'Cinzel';font-size:14px;padding:10px 20px;border-radius:999px;z-index:60;opacity:0;transition:opacity .25s;box-shadow:0 0 30px rgba(126,249,214,.25);pointer-events:none;max-width:90vw;text-align:center}
-  .cap.show{opacity:1}
-  body.replaying .panel{outline:1px solid rgba(231,196,90,.35)}
-  /* ===== START MENU (level select) ===== */
-  .menu{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;overflow:auto;
-    background:radial-gradient(900px 500px at 50% -5%,rgba(28,107,88,.35),transparent 60%),radial-gradient(700px 500px at 50% 120%,rgba(40,8,8,.4),transparent 60%),#05090a}
-  .menu.show{display:flex}
-  .menu .kicker{font-family:'Cinzel';letter-spacing:.45em;font-size:12px;color:var(--ghost-dim);text-transform:uppercase}
-  .menu h1{font-family:'Cinzel';font-weight:900;font-size:clamp(30px,6vw,56px);color:var(--bone);text-shadow:0 0 30px rgba(126,249,214,.4);margin:6px 0 2px;text-align:center}
-  .menu .sub{color:#9fb6ad;font-size:15px;margin-bottom:6px}
-  .puzzle-grid{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-top:26px}
-  .puzzle-card{width:210px;border-radius:16px;overflow:hidden;border:1px solid var(--ghost-deep);background:var(--card-bg);cursor:pointer;position:relative;transition:transform .2s,box-shadow .2s;animation:floaty 5s ease-in-out infinite}
-  .puzzle-card:hover{transform:translateY(-10px) scale(1.02);box-shadow:0 16px 50px rgba(0,0,0,.6),0 0 40px rgba(126,249,214,.35)}
-  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-  .puzzle-card .pa{height:250px;width:100%;overflow:hidden;position:relative}
-  .puzzle-card .pa img{width:100%;height:100%;object-fit:cover;display:block}
-  .puzzle-card .pa::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(5,9,10,.85));pointer-events:none}
-  .puzzle-card .glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 60% at 50% 0,rgba(126,249,214,.18),transparent 60%);mix-blend-mode:screen;animation:pulse 3.5s ease-in-out infinite}
-  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.85}}
-  .puzzle-card .lvl{position:absolute;top:12px;left:12px;font-family:'Cinzel';font-size:11px;letter-spacing:.12em;text-transform:uppercase;background:rgba(231,196,90,.92);color:#1b1404;padding:4px 10px;border-radius:999px;z-index:3;font-weight:700}
-  .puzzle-card .pinfo{position:absolute;left:0;right:0;bottom:0;padding:12px 14px;z-index:3;text-align:center}
-  .puzzle-card .pname{font-family:'Cinzel';font-weight:900;font-size:16px;color:var(--bone)}
-  .puzzle-card .pplay{font-family:'Cinzel';font-size:12px;color:var(--ghost);letter-spacing:.08em;margin-top:2px}
-  .menu .foot{margin-top:30px;font-size:12px;color:#5f7a72}
+  :root{--bg:#0b0f17;--panel:#141b27;--panel2:#1a2230;--line:#27313f;--ink:#e9edf4;--muted:#94a1b5;--faint:#5f6c7e;
+    --gold:#e3b25a;--teal:#49c7b1;--good:#46b88a;--bad:#e0575c;--mid:#586374;
+    --r-DE:#e8c25a;--r-FR:#6fd0e8;--r-IO:#ef7fae;--r-NX:#e0524e;--r-PZ:#f0973f;--r-SI:#38c39a;--r-BW:#e06a3a;--r-SH:#d9b84a;--r-MT:#9b7fe0;--r-BC:#7fce5a;--r-RU:#9aa6b8;}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{background:radial-gradient(1100px 500px at 78% -10%,rgba(227,178,90,.07),transparent 60%),radial-gradient(900px 480px at 8% 0%,rgba(73,199,177,.06),transparent 55%),var(--bg);min-height:100vh}
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 22px 90px}
+  .eyebrow{font:600 11px/1 "Spline Sans Mono",monospace;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+  h1{font-family:Fraunces,serif;font-weight:560;font-size:clamp(34px,6vw,58px);line-height:.98;margin:0;letter-spacing:-.01em}
+  h1 em{font-style:italic;color:var(--teal)}
+  .sub{margin:14px 0 0;color:var(--muted);font-size:14px;max-width:64ch}
+  .meta{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:20px;font:500 12.5px/1 "Spline Sans Mono",monospace;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:600}.meta .dot{color:var(--faint)}
+  .controls{display:flex;flex-wrap:wrap;gap:22px;margin:30px 0 8px;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+  .ctl{display:flex;flex-direction:column;gap:8px}
+  .ctl>span{font:600 10.5px/1 "Spline Sans Mono",monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:500 13px/1 Inter,sans-serif;padding:8px 13px;border-radius:7px;cursor:pointer;transition:background .15s,color .15s}
+  .seg button:hover{color:var(--ink)}
+  .seg button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+  .seg button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .viewbar{display:flex;align-items:center;gap:16px;margin-top:30px;flex-wrap:wrap}
+  .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .tabs button{appearance:none;border:0;background:transparent;color:var(--muted);font-family:Fraunces,serif;font-weight:560;font-size:16px;padding:9px 18px;border-radius:8px;cursor:pointer}
+  .tabs button[aria-pressed="true"]{background:var(--gold);color:#0b0f17}
+  .tabs button:not([aria-pressed="true"]):hover{color:var(--ink)}
+  .smooth{display:flex;align-items:center;gap:10px;margin-left:auto;font:500 11.5px/1 "Spline Sans Mono",monospace;color:var(--faint)}
+  .smooth .seg button{padding:7px 11px;font-size:12px}
+  section{margin-top:34px}
+  .head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .head h2{font-family:Fraunces,serif;font-weight:560;font-size:22px;margin:0;letter-spacing:-.01em}
+  .head .note{font:500 12px/1.4 "Spline Sans Mono",monospace;color:var(--faint)}
+  .head .spacer{flex:1}
+  .linkbtn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:500 12px/1 "Spline Sans Mono",monospace;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .linkbtn:hover{color:var(--ink);border-color:var(--gold)}
+  .chips{display:inline-flex;gap:4px;vertical-align:middle}
+  .chip{display:inline-flex;align-items:center;justify-content:center;width:22px;height:16px;border-radius:4px;font:600 9px/1 "Spline Sans Mono",monospace;color:#0b0f17}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+  table.list{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.list th{text-align:left;font:600 10.5px/1 "Spline Sans Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:14px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.list th.num,table.list td.num{text-align:right;font-family:"Spline Sans Mono",monospace}
+  table.list th.sortable{cursor:pointer;user-select:none}table.list th.sortable:hover{color:var(--muted)}table.list th.active{color:var(--gold)}
+  table.list td{padding:11px 12px;border-bottom:1px solid rgba(39,49,63,.55)}
+  table.list tbody tr{cursor:pointer}table.list tbody tr:hover{background:var(--panel2)}
+  table.list tbody tr.sel{background:rgba(227,178,90,.08);box-shadow:inset 3px 0 0 var(--gold)}
+  table.list .nm{display:flex;align-items:center;gap:10px;min-width:170px}
+  .ci{font:500 11px/1 "Spline Sans Mono",monospace;color:var(--faint)}
+  .pbar{height:3px;border-radius:2px;background:var(--line);margin-top:5px;overflow:hidden;width:90px}.pbar>i{display:block;height:100%;background:var(--teal)}
+  table.mx{border-collapse:collapse;font:500 12px/1 "Spline Sans Mono",monospace}
+  table.mx th,table.mx td{padding:0;text-align:center}
+  table.mx thead th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-weight:500;height:128px;vertical-align:bottom;z-index:1}
+  table.mx thead th .v{writing-mode:vertical-rl;transform:rotate(180deg);padding:9px 0;max-height:116px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;cursor:pointer}
+  table.mx thead th.lead{writing-mode:horizontal-tb;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);height:128px;vertical-align:bottom;padding-bottom:11px}
+  table.mx tbody th{text-align:left;white-space:nowrap;padding:0 12px 0 16px;color:var(--ink);font-weight:500;font-size:12px;background:var(--panel);cursor:pointer}
+  table.mx tbody th:hover{color:var(--gold)}
+  table.mx td{width:40px;height:38px;border-left:1px solid rgba(39,49,63,.5);border-top:1px solid rgba(39,49,63,.5);color:#0b0f17;font-weight:600;position:relative}
+  table.mx td.lead{background:var(--panel2);color:var(--ink);font-weight:500;width:52px}
+  table.mx td.diag{background:repeating-linear-gradient(45deg,#1a2230,#1a2230 4px,#171e2a 4px,#171e2a 8px);color:var(--faint)}
+  table.mx td.empty{color:var(--faint);background:var(--panel2)}
+  table.mx td.low{opacity:.5}
+  table.mx td.sig::after{content:"";position:absolute;left:3px;top:3px;width:5px;height:5px;border-radius:50%;background:#0b0f17;opacity:.55}
+  .legend{display:flex;align-items:center;gap:8px;margin-top:14px;font:500 11px/1 "Spline Sans Mono",monospace;color:var(--faint);flex-wrap:wrap}
+  .legend .scale{display:flex;height:9px;width:150px;border-radius:5px;overflow:hidden}.legend .scale i{flex:1}
+  .detail{border:1px solid var(--gold);border-radius:16px;background:var(--panel);padding:22px;margin-bottom:26px;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .detail .dhead{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .detail .dtitle{font-family:Fraunces,serif;font-weight:560;font-size:22px;display:flex;align-items:center;gap:10px}
+  .detail .close{margin-left:auto;appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px}
+  .detail .close:hover{color:var(--ink);border-color:var(--gold)}
+  .detail .stat{display:flex;gap:24px;margin:14px 0 4px;flex-wrap:wrap;font:500 13px/1.3 "Spline Sans Mono",monospace}
+  .detail .stat b{display:block;font-family:Fraunces,serif;font-size:20px;font-weight:640;margin-top:3px}
+  .detail .stat .k{color:var(--faint);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:20px}
+  @media (max-width:680px){.cols{grid-template-columns:1fr;gap:18px}}
+  .cols h4{font:600 10.5px/1 "Spline Sans Mono",monospace;letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px;color:var(--faint)}
+  .cols h4.good{color:var(--good)}.cols h4.bad{color:var(--bad)}
+  .mrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(39,49,63,.5)}
+  .mrow .opp{flex:1;display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}.mrow .opp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mrow .pr{font:500 10.5px/1 "Spline Sans Mono",monospace;color:var(--faint);width:42px;text-align:right}
+  .mrow .rec{font:500 11px/1 "Spline Sans Mono",monospace;color:var(--muted);width:42px;text-align:right}
+  .mrow .wrcell{font:600 13px/1 "Spline Sans Mono",monospace;width:40px;text-align:right}
+  .mrow .sigd{width:12px;color:var(--gold);font-size:11px;text-align:center}
+  .submodes{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:20px;width:fit-content}
+  .submodes button{appearance:none;border:0;background:transparent;color:var(--muted);font:500 13px/1 Inter,sans-serif;padding:9px 15px;border-radius:7px;cursor:pointer}
+  .submodes button[aria-pressed="true"]{background:var(--teal);color:#0b0f17;font-weight:600}
+  .submodes button:not([aria-pressed="true"]):hover{color:var(--ink)}
+  .conqbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;font:500 12.5px/1.4 "Spline Sans Mono",monospace;color:var(--muted)}
+  select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:500 12.5px/1 Inter,sans-serif;max-width:230px}
+  .lineups{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+  .conq{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:16px 18px}
+  .conq.top{border-color:var(--gold)}
+  .conq .rank{font:600 11px/1 "Spline Sans Mono",monospace;color:var(--faint);letter-spacing:.1em}
+  .conq .cov{font-family:Fraunces,serif;font-weight:640;font-size:30px;line-height:1;margin:6px 0 2px}
+  .conq .covk{font:500 10.5px/1 "Spline Sans Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .conq .decks{margin:14px 0 4px;display:flex;flex-direction:column;gap:8px}
+  .conq .d{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer}.conq .d:hover span{color:var(--gold)}
+  .conq .d .lp{margin-left:auto;font:500 9px/1 "Spline Sans Mono",monospace;letter-spacing:.08em;color:var(--bad);border:1px solid var(--bad);border-radius:5px;padding:3px 5px}
+  .conq .foot{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font:500 11px/1.5 "Spline Sans Mono",monospace;color:var(--faint)}.conq .foot b{color:var(--muted)}
+  .lpick{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px}
+  @media (max-width:680px){.lpick{grid-template-columns:1fr}}
+  .lpick .box{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:16px 18px}
+  .lpick h4{font:600 10.5px/1 "Spline Sans Mono",monospace;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px}
+  .lpick h4.me{color:var(--teal)}.lpick h4.them{color:var(--bad)}
+  .lpick .sel3{display:flex;flex-direction:column;gap:8px}.lpick select{max-width:none;width:100%}
+  .banres{border:1px solid var(--gold);border-radius:16px;background:var(--panel);padding:22px;margin-bottom:24px}
+  .banres .big{display:flex;gap:30px;flex-wrap:wrap;align-items:flex-end}
+  .banres .mwin{font-family:Fraunces,serif;font-weight:640;font-size:46px;line-height:.9}
+  .banres .mk{font:500 10.5px/1 "Spline Sans Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .banres .rec{font-size:14px;line-height:1.7}.banres .rec b{color:var(--ink)}
+  .banres .ban{color:var(--good);font-weight:600}.banres .exposed{color:var(--bad);font-weight:600}
+  .grid33{border-collapse:collapse;margin-top:18px;font:500 11px/1 "Spline Sans Mono",monospace}
+  .grid33 th{color:var(--muted);font-weight:500;padding:6px 8px;text-align:right;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grid33 thead th{text-align:center;vertical-align:bottom;color:var(--faint)}
+  .grid33 td{width:46px;height:34px;text-align:center;color:#0b0f17;font-weight:600;border-radius:4px}
+  .trend{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  @media (max-width:680px){.trend{grid-template-columns:1fr}}
+  .trow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(39,49,63,.5);cursor:pointer}
+  .trow:hover{background:var(--panel2)}
+  .trow .nm{flex:1;display:flex;align-items:center;gap:8px;min-width:0;font-size:13.5px}.trow .nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .delta{font:600 12px/1 "Spline Sans Mono",monospace;width:60px;text-align:right}
+  .trow .sub{font:500 10.5px/1 "Spline Sans Mono",monospace;color:var(--faint);width:96px;text-align:right}
+  .empty-state{padding:46px 22px;text-align:center;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:14px}
+  .empty-state b{color:var(--ink);display:block;margin-bottom:6px;font-size:15px}
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:var(--faint);font:500 12px/1.7 "Spline Sans Mono",monospace}footer b{color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-
-<!-- START MENU -->
-<div class="menu show" id="menu">
-  <div class="kicker">Legends of Runeterra</div>
-  <h1>Lethal Puzzles</h1>
-  <div class="sub">Choose a puzzle by level</div>
-  <div class="puzzle-grid" id="puzzleGrid"></div>
-  <div class="foot">More puzzles coming soon.</div>
-</div>
-
 <div class="wrap">
-  <header>
-    <div class="kicker">Legends of Runeterra &middot; Lethal Puzzle</div>
-    <h1 id="puzzleTitle">Beginner's puzzle</h1>
-    <div class="obj" id="obj">Bring the enemy Nexus from <b>13</b> to <b>0</b> by the end of round 2. You only attack on round 2.</div>
-  </header>
-
-  <div class="nexus-row">
-    <div class="nexus enemy" id="enemyNexusEl"><h3>Enemy Nexus</h3><div class="hp" id="enemyHp">13</div><div class="hpbar"><i id="enemyBar" style="width:100%"></i></div></div>
-    <div class="nexus mine"><h3>Your Nexus</h3><div class="hp" id="myHp">13</div><div class="hpbar"><i id="myBar" style="width:100%"></i></div></div>
+  <div class="eyebrow">LND · Storyteller Project</div>
+  <h1>Runeterra <em>Meta</em></h1>
+  <p class="sub">Live ranked stats from the Riot API, with Bayes-smoothed win rates and a tournament toolkit: matchup analysis, lineup building, ban planning.</p>
+  <div class="meta" id="meta"></div>
+  <div class="controls">
+    <div class="ctl"><span>Region</span><div class="seg" id="seg-region"></div></div>
+    <div class="ctl"><span>Format</span><div class="seg" id="seg-format"></div></div>
+    <div class="ctl"><span>Window</span><div class="seg" id="seg-window"></div></div>
   </div>
-
-  <div class="board-grid">
-    <div>
-      <div class="panel">
-        <div class="zone-label foe"><span>Enemy Board</span></div>
-        <div class="board foe empty" id="enemyBoard" data-empty="no enemy units"></div>
-
-        <div class="zone-label field"><span>Battlefield</span></div>
-        <div class="battlefield empty" id="battlefield"></div>
-
-        <div class="zone-label you"><span>Your Board</span></div>
-        <div class="board empty" id="board" data-empty="empty board — play units from your hand"></div>
-
-        <div class="status">
-          <span class="chip">Round <b id="roundLbl">1</b>/2</span>
-          <span class="chip">Mana <span class="pips" id="manaPips"></span></span>
-          <span class="chip">Spell <span class="pips" id="spellPips"></span></span>
-          <span class="chip" id="tokenChip">Attack Token: <b>&mdash;</b></span>
-          <span class="chip" id="nextDrawChip" style="display:none">Next draw: <b>&mdash;</b></span>
-        </div>
-
-        <div class="hand-wrap">
-          <div class="zone-label you"><span>Hand</span></div>
-          <div class="hand" id="hand"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel side">
-      <h3>Actions</h3>
-      <button class="btn" id="endTurnBtn">End Round 1 &rarr; Round 2</button>
-      <button class="btn attack" id="attackBtn" disabled>Declare Attack &#9876;</button>
-      <div class="btnrow"><button class="btn ghost" id="menuBtn">&#9776; Levels</button><button class="btn ghost" id="resetBtn">Reset</button></div>
-      <h3 style="margin-top:14px">Replay</h3>
-      <div class="btnrow"><button class="btn" id="replayBtn">&#9654; Replay</button>
-        <select id="speedSel" class="btn ghost" style="cursor:pointer"><option value="1400">Slow</option><option value="900" selected>Normal</option><option value="500">Fast</option></select></div>
-      <h3 style="margin-top:14px">Chronicle</h3>
-      <div class="log" id="log"></div>
-    </div>
+  <div class="viewbar">
+    <div class="tabs" id="tabs"></div>
+    <div class="smooth"><span id="kappa"></span><div class="seg" id="seg-smooth"></div></div>
   </div>
+  <div id="content"></div>
+  <footer id="foot"></footer>
 </div>
-
-<div class="cap" id="cap"></div>
-<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
-
 <script>
-/* ===================== CARD DB ===================== */
-const CARDS = {
-  shellshocker:{name:'Shellshocker',code:'02BW040',set:2,type:'unit',cost:1,power:2,health:1,text:'Attune.',keywords:['Attune'],effect:'attune'},
-  ravenous_butcher:{name:'Ravenous Butcher',code:'01SI011',set:1,type:'unit',cost:0,power:3,health:2,text:'To play me, kill an ally.',killAlly:true},
-  wings_and_wave:{name:'The Wings and The Wave',code:'04SI004',set:4,type:'unit',cost:1,power:0,health:1,text:'Play: as First Wave (two 0/1) or Last Wind (3/3, kill an ally).',effect:'wings_choice'},
-  shroud_of_darkness:{name:'Shroud of Darkness',code:'03SI007',set:3,type:'spell',cost:1,text:'Burst. Next ally you summon this round gets +1|+0 and SpellShield.',keywords:['Burst'],effect:'shroud'},
-  first_wave:{name:'First Wave',code:'04SI004T2',set:4,type:'unit',cost:0,power:0,health:1,text:'When summoned, summon a Prey.',effect:'summon_prey',token:true},
-  last_wind:{name:'Last Wind',code:'04SI004T1',set:4,type:'unit',cost:0,power:3,health:3,text:'',token:true},
-  prey:{name:'Prey',code:'04SI004T3',set:4,type:'unit',cost:0,power:0,health:1,text:'',token:true}
-};
+const REGION_LABEL={europe:'EU',americas:'NA',asia:'APAC'};
+const REGION_NAME={DE:'Demacia',FR:'Freljord',IO:'Ionia',NX:'Noxus',PZ:'Piltover & Zaun',SI:'Shadow Isles',BW:'Bilgewater',SH:'Shurima',MT:'Mount Targon',BC:'Bandle City',RU:'Runeterra'};
+const FACTION_REF={FACTION_DEMACIA_NAME:'DE',FACTION_FRELJORD_NAME:'FR',FACTION_IONIA_NAME:'IO',FACTION_NOXUS_NAME:'NX',FACTION_PILTOVER_NAME:'PZ',FACTION_SHADOWISLES_NAME:'SI',FACTION_BILGEWATER_NAME:'BW',FACTION_SHURIMA_NAME:'SH',FACTION_MTTARGON_NAME:'MT',FACTION_BANDLECITY_NAME:'BC'};
+const regionCode=f=>FACTION_REF[f]||(/^[A-Z]{2}$/.test(f)?f:'RU');
+function normalizeLabel(l){const m=String(l).match(/^(.*?)\s*\(([^)]*)\)\s*$/);if(!m)return l;return `${m[1].trim()} (${[...new Set(m[2].split('/').map(s=>regionCode(s.trim())))].sort().join('/')})`;}
+function regionsOf(l){const m=String(l).match(/\(([^)]*)\)\s*$/);return m?m[1].split('/'):[];}
+function deckName(l){return l.replace(/\s*\([^)]*\)\s*$/,'');}
+function champsOf(l){const n=deckName(l);if(/^champless$/i.test(n))return [];return n.split('/').map(c=>c.split(':')[0].trim());}
+function chips(l){return `<span class="chips">`+regionsOf(l).map(r=>`<span class="chip" style="background:var(--r-${r},#9aa6b8)" title="${REGION_NAME[r]||r}">${r}</span>`).join('')+`</span>`;}
+function esc(s){return String(s).replace(/'/g,"\\'");}
+function wilson(w,n){if(!n)return[0,0];const z=1.96,p=w/n,d=1+z*z/n,c=p+z*z/(2*n),m=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n));return[(c-m)/d,(c+m)/d];}
+function wrColor(wr){if(wr==null)return 'var(--mid)';const t=Math.max(0,Math.min(1,(wr-0.35)/0.30)),bad=[224,87,92],good=[70,184,138];const c=bad.map((b,i)=>Math.round(b+(good[i]-b)*t));return `rgb(${c[0]},${c[1]},${c[2]})`;}
+function fmtWR(wr){return wr==null?'—':(wr*100).toFixed(0)+'%';}
+function fmtCI(lo,hi){return `${(lo*100).toFixed(0)}–${(hi*100).toFixed(0)}`;}
 
-/* Scripted-puzzle cards — real Data Dragon codes (tokens stay text) */
-const SCARDS = {
-  karma:{name:'Karma Lv2',type:'unit',cost:5,power:5,health:4,code:'01IO041T1',set:1,keywords:['Lv2']},
-  senna:{name:'Senna',type:'unit',cost:5,power:4,health:4,code:'05SI009',set:5},
-  field_musicians:{name:'Field Musicians',type:'unit',cost:4,power:1,health:4,code:'04IO001',set:4,keywords:['1/3']},
-  abom:{name:'Escaped Abomination',type:'unit',cost:0,power:4,health:3,code:'01SI048T1',set:1},
-  butcher:{name:'Ravenous Butcher',type:'unit',cost:0,power:3,health:2,code:'01SI011',set:1,keywords:['Ephemeral']},
-  prey:{name:'Prey',type:'unit',cost:0,power:0,health:1,code:null},
-  tag_out:{name:'Tag Out',type:'spell',cost:2,code:'07IO020',set:7,text:'Recall an ally; make 2 Coins.'},
-  coins:{name:'Coins',type:'spell',cost:0,code:null,text:'Gain mana gems. Karma doubles.'},
-  fading_memories:{name:'Fading Memories',type:'spell',cost:0,code:'01SI047',set:1,text:'Burst. Pick a follower; create an Ephemeral copy in hand.'},
-  thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:'06SI027',set:6,text:'Kill an ally to deal its Power to an enemy.'},
-  absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:'01SI045',set:1,text:'Drain 4 from an ally.'},
-  lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:'04SI001',set:4,text:"Weakest ally can't take damage or die this round."},
-  soul_cleave:{name:'Soul Cleave',type:'spell',cost:3,code:'06SI045',set:6,text:'Slow. Kill an ally to summon 2 Ephemeral copies of it.'},
-  go_hard:{name:'Go Hard',type:'spell',cost:1,code:'03SI016',set:3,text:'Slow. Drain 1 from a unit. Every 3rd cast \u2192 Pack Your Bags.'},
-  pack_your_bags:{name:'Pack Your Bags',type:'spell',cost:0,code:'03SI016T1',set:3,text:'Deal 5 to all enemies and the enemy Nexus, then turn back into Go Hard.'},
-  darkness:{name:'Darkness',type:'spell',cost:3,code:'05SI029',set:5,text:'Bait \u2014 deal 2 to a unit or Nexus.'}
-};
-/* Board-unit art lookup (by display name) for the scripted engine */
-const SCODE = {
-  'Prey':null,
-  'Field Musicians':{c:'04IO001',s:4},
-  'Senna':{c:'05SI009',s:5}, 'Senna Lv2':{c:'05SI009T1',s:5},
-  'Karma Lv2':{c:'01IO041T1',s:1},
-  'Ravenous Butcher':{c:'01SI011',s:1},
-  'Escaped Abomination':{c:'01SI048T1',s:1}
-};
+const MIN_GAMES=3,META_MIN=0.01,CAND_N=14,FIELD_MIN=0.005;
+const state={region:'all',format:'all',window:14,sort:'play',selected:null,view:'meta',smooth:true,requireDeck:'',conqMode:'build',myLineup:null,oppLineup:null};
+let STATS=null,KAPPA=8;
+const todayKey=()=>new Date().toISOString().slice(0,10);
 
-/* ===================== PUZZLES (level select) ===================== */
-const PUZZLES = [
-  {
-    id:'beginner', level:'Tutorial', name:"Beginner's puzzle",
-    gif:'',                       /* optional: animated .gif URL for the menu card */
-    artCode:'03SI007', artSet:3,  /* representative card art (Shroud of Darkness) */
-    config:{
-      enemyNexus:13, myNexus:13,
-      rounds:[ {mana:1,attackToken:false}, {mana:2,attackToken:true} ],
-      hand:[ {id:'shellshocker',count:3}, {id:'ravenous_butcher',count:3},
-        {id:'wings_and_wave',count:1}, {id:'shroud_of_darkness',count:3} ],
-      enemyBoard:[]
-    }
-  },
-  {
-    id:'normal', level:'Normal', name:'Karma Combo OTK', mode:'scripted',
-    gif:'', artCode:'01IO041T1', artSet:1,  /* Karma level-2 art (verified: 01IO041T1) */
-    enemyNexus:20, myNexus:20, gems:5, spell:3, nextDraw:'soul_cleave',
-    ourBoard:[ {name:'Prey',p:0,h:1}, {name:'Field Musicians',p:1,h:4}, {name:'Senna',p:4,h:4,kw:['Quick Attack','0/3']} ],
-    enemyBoard:[ {name:'Ravenous Butcher',p:3,h:2}, {name:'Escaped Abomination',p:4,h:3} ],
-    hand:['karma','tag_out','fading_memories','thread_needle','absorb_soul','lambs_respite','go_hard','go_hard','go_hard','darkness'],
-    steps:[
-      {card:'karma',cap:'Play Karma for 5 \u2014 it levels up (turn 10+). 3 spell mana left.',run:()=>{ sDelHand('karma'); sSummon('Karma Lv2',5,4,['Lv2']); sMana(0,3); }},
-      {card:'tag_out',picks:[{side:'ally',name:'Prey',prompt:'Tag Out \u2014 recall an ally'}],cap:'Tag Out the Prey (recalled). Karma Lv2 makes 2 Coins (stacked). 1 spell mana left.',run:()=>{ sDelHand('tag_out'); sDelUnit('Prey'); sAddHand('prey'); sAddHand('coins'); sMana(0,1); }},
-      {card:'coins',cap:'Spend the last spell mana on Coins; Karma doubles them \u2192 4 mana gems.',run:()=>{ sDelHand('coins'); sMana(4,0); }},
-      {card:'prey',cap:'Replay the Prey for 0.',run:()=>{ sDelHand('prey'); sSummon('Prey',0,1); }},
-      {card:'fading_memories',picks:[{side:'both',type:'follower',name:'Ravenous Butcher',prompt:'Fading Memories \u2014 pick a follower'}],cap:'Fading Memories: copy a follower (Ephemeral) into hand. 0 mana.',run:()=>{ sDelHand('fading_memories'); sAddHand('butcher'); sMana(4,0); }},
-      {card:'butcher',picks:[{side:'ally',name:'Prey',prompt:'Ravenous Butcher \u2014 kill an ally to play it'}],cap:'Play the Butcher, killing an ally. (3rd summon \u2192 Field Musicians activates: spell mana + Soul Cleave.)',run:()=>{ sDelHand('butcher'); sDelUnit('Prey'); sSummon('Ravenous Butcher',3,2); }},
-      {card:'thread_needle',picks:[{side:'ally',name:'Ravenous Butcher',prompt:'Thread the Needle \u2014 kill an ally'},{side:'enemy',name:'Escaped Abomination',prompt:'Thread the Needle \u2014 deal its Power to an enemy'}],cap:'Thread the Needle: kill our Butcher, deal 3 to their Abomination. Senna level-up 2/3. 5 mana.',run:()=>{ sDelHand('thread_needle'); sDelUnit('Ravenous Butcher'); const ab=S.enemyBoard.find(u=>u.name.indexOf('Escaped')===0); if(ab){ab.health-=3; if(ab.health<=0)S.enemyBoard=S.enemyBoard.filter(u=>u!==ab);} const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn)sn.keywords=['Quick Attack','2/3']; sMana(4,1); }},
-      {card:'absorb_soul',picks:[{side:'ally',name:'Field Musicians',prompt:'Absorb Soul \u2014 drain 4 from an ally'}],cap:'Absorb Soul on Field Musicians \u2192 Senna levels up. Board: Senna Lv2 + Karma Lv2. 4 mana.',run:()=>{ sDelHand('absorb_soul'); S.board=S.board.filter(u=>u.name.indexOf('Senna')===0||u.name.indexOf('Karma')===0); const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn){sn.name='Senna Lv2';sn.power=5;sn.health=5;sn.keywords=['Lv2'];} sMana(4,0); }},
-      {card:'lambs_respite',cap:"Lamb's Respite \u2192 weakest ally (here Karma 5/4). 2 mana.",run:()=>{ sDelHand('lambs_respite'); const w=sWeakestAlly(); if(w)w.keywords=(w.keywords||[]).concat('Respite'); sMana(2,0); }},
-      {card:'soul_cleave',picks:[{side:'ally',name:'Karma',prompt:'Soul Cleave \u2014 target an ally'}],cap:'Soul Cleave on Karma: Lamb\u2019s Respite \u2192 she can\u2019t die, Karma doubles it \u2192 4 Ephemeral Karma. Board: 1 Senna + 5 Karma. 0 mana.',run:()=>{ sDelHand('soul_cleave'); for(let i=0;i<4;i++) sSummon('Karma Lv2',5,4,['Lv2','Ephemeral']); sMana(0,0); }},
-      {card:'go_hard',cap:'Go Hard #1 (0 mana). It casts 6\u00d7: 1 Pack Your Bags. Enemy 20 \u2192 15.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=15; }},
-      {card:'go_hard',cap:'Go Hard #2. 2 Pack Your Bags. Enemy 15 \u2192 5.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=5; }},
-      {card:'go_hard',cap:'Go Hard #3. 1 Pack Your Bags. Enemy 5 \u2192 0. LETHAL!',run:()=>{ sDelHand('go_hard'); S.enemyNexus=0; }}
-    ]
+function aggregate(){
+  const days=STATS.days||{};
+  const cutoff=state.window?new Date(Date.now()-(state.window-1)*864e5).toISOString().slice(0,10):STATS.patchStart;
+  const today=todayKey();const deck={},mu={};const inWin=[];
+  for(const[d,regs]of Object.entries(days)){if(d<cutoff||d>today)continue;inWin.push(d);
+    for(const[reg,fmts]of Object.entries(regs)){if(state.region!=='all'&&reg!==state.region)continue;
+      for(const[fmt,b]of Object.entries(fmts)){if(state.format!=='all'&&fmt!==state.format)continue;
+        for(const[k,v]of Object.entries(b.deckGames||{})){const n=normalizeLabel(k);(deck[n]??={games:0,wins:0,byDay:{}});deck[n].games+=v.games;deck[n].wins+=v.wins;(deck[n].byDay[d]??={games:0,wins:0});deck[n].byDay[d].games+=v.games;deck[n].byDay[d].wins+=v.wins;}
+        for(const[k,v]of Object.entries(b.matchups||{})){const i=k.indexOf('@@');if(i<0)continue;const nk=normalizeLabel(k.slice(0,i))+'@@'+normalizeLabel(k.slice(i+2));(mu[nk]??={games:0,wins:0});mu[nk].games+=v.games;mu[nk].wins+=v.wins;}
+      }}}
+  return {deck,mu,inWin:inWin.sort()};
+}
+function estimateKappa(mu){const ps=[],sv=[];for(const v of Object.values(mu)){if(v.games<2)continue;const p=v.wins/v.games;ps.push(p);sv.push(p*(1-p)/v.games);}
+  if(ps.length<5)return 8;const mean=ps.reduce((a,b)=>a+b,0)/ps.length;const obs=ps.reduce((a,b)=>a+(b-mean)**2,0)/ps.length;const msv=sv.reduce((a,b)=>a+b,0)/sv.length;const tv=obs-msv;if(tv<=0)return 40;return Math.max(4,Math.min(40,0.25/tv-1));}
+function muWR(mu,a,b){const e=mu[`${a}@@${b}`];if(state.smooth)return e?(e.wins+KAPPA/2)/(e.games+KAPPA):0.5;return e&&e.games?e.wins/e.games:null;}
+function muCalc(mu,a,b){const v=muWR(mu,a,b);return v==null?0.5:v;}
+function muGames(mu,a,b){const e=mu[`${a}@@${b}`];return e?e.games:0;}
+function muSig(mu,a,b){const e=mu[`${a}@@${b}`];if(!e||!e.games)return false;const[lo,hi]=wilson(e.wins,e.games);return lo>0.5||hi<0.5;}
+
+function computeDecks(deck,mu){
+  const total=Object.values(deck).reduce((a,d)=>a+d.games,0);
+  const decks=Object.entries(deck).map(([label,v])=>{
+    const rawWR=v.games?v.wins/v.games:0;const wr=state.smooth?(v.wins+KAPPA/2)/(v.games+KAPPA):rawWR;let lo,hi;
+    if(state.smooth){const a=v.wins+KAPPA/2,b=v.games-v.wins+KAPPA/2,m=a/(a+b),sd=Math.sqrt(a*b/((a+b)**2*(a+b+1)));lo=Math.max(0,m-1.96*sd);hi=Math.min(1,m+1.96*sd);}else{[lo,hi]=wilson(v.wins,v.games);}
+    return {label,games:v.games,wins:v.wins,rawWR,wr,ciLo:lo,ciHi:hi,play:total?v.games/total:0,byDay:v.byDay};
+  });
+  decks.forEach(d=>{let num=0,den=0;for(const o of decks){if(o.label===d.label)continue;if(o.play<FIELD_MIN)continue;num+=o.play*muCalc(mu,d.label,o.label);den+=o.play;}d.expWR=den?num/den:null;});
+  return {decks,total};
+}
+
+// ---- Conquest match-win (memoized minimax) ----
+function makeMatchWin(mu){const memo=new Map();
+  function mw(my,opp){if(!my.length)return 1;if(!opp.length)return 0;
+    const key=my.join('|')+'#'+opp.join('|');if(memo.has(key))return memo.get(key);
+    let best=-1;for(const i of my){let worst=2;for(const j of opp){const p=muCalc(mu,i,j);
+      const v=p*mw(my.filter(x=>x!==i),opp)+(1-p)*mw(my,opp.filter(x=>x!==j));if(v<worst)worst=v;}if(worst>best)best=worst;}
+    memo.set(key,best);return best;}
+  return mw;}
+function banHelper(M,O,mw){let bestO=null,bestVal=-1,theirBan=null;
+  for(const o of O){let worst=2,wm=null;for(const m of M){const v=mw(M.filter(x=>x!==m),O.filter(x=>x!==o));if(v<worst){worst=v;wm=m;}}if(worst>bestVal){bestVal=worst;bestO=o;theirBan=wm;}}
+  return {banTheir:bestO,theyBan:theirBan,matchWin:bestVal};}
+function legalLineup(L){const seen=new Set();for(const d of L)for(const c of champsOf(d)){if(seen.has(c))return false;seen.add(c);}return true;}
+function pickLineup(decks,exclude){const used=new Set(),out=[];for(const d of decks){if(out.length>=3)break;if(exclude&&exclude.has(d.label))continue;const ch=champsOf(d.label);if(ch.some(c=>used.has(c)))continue;ch.forEach(c=>used.add(c));out.push(d.label);}while(out.length<3)out.push('');return out;}
+
+function fmt1(x){return (x*100).toFixed(1)+'%';}
+
+// ---------------- COUNTER EXPLORER ----------------
+function renderDetail(decks,mu,byLabel){
+  if(!state.selected||!byLabel[state.selected])return '';
+  const d=byLabel[state.selected];
+  const rows=decks.filter(o=>o.label!==d.label).map(o=>{const wr=muWR(mu,d.label,o.label),g=muGames(mu,d.label,o.label);return {opp:o.label,play:o.play,wr,g,wins:(mu[`${d.label}@@${o.label}`]||{}).wins||0,sig:muSig(mu,d.label,o.label)};}).filter(r=>r.wr!=null||r.g>0);
+  const W=r=>r.wr==null?0.5:r.wr;
+  const beats=rows.filter(r=>W(r)>=0.5).sort((a,b)=>W(b)-W(a)||b.play-a.play).slice(0,10);
+  const loses=rows.filter(r=>W(r)<0.5).sort((a,b)=>W(a)-W(b)||b.play-a.play).slice(0,10);
+  const row=r=>`<div class="mrow"><div class="opp">${chips(r.opp)}<span>${deckName(r.opp)}</span></div><div class="sigd">${r.sig?'✓':''}</div><div class="pr">${fmt1(r.play)}</div><div class="rec">${r.g?r.wins+'/'+r.g:'—'}</div><div class="wrcell" style="color:${wrColor(W(r))}">${fmtWR(r.wr)}</div></div>`;
+  return `<div class="detail"><div class="dhead"><div class="dtitle">${chips(d.label)} ${deckName(d.label)}</div><button class="close" onclick="clearSel()">✕</button></div>
+    <div class="stat"><div><span class="k">Games</span><b>${d.games}</b></div><div><span class="k">Play rate</span><b>${fmt1(d.play)}</b></div>
+      <div><span class="k">Win rate</span><b style="color:${wrColor(d.wr)}">${fmtWR(d.wr)}</b><span class="ci">${fmtCI(d.ciLo,d.ciHi)}</span></div>
+      <div><span class="k">Exp WR vs field</span><b style="color:${wrColor(d.expWR)}">${fmtWR(d.expWR)}</b></div></div>
+    <div class="cols"><div><h4 class="good">You're favored ▸ play more vs these</h4>${beats.length?beats.map(row).join(''):'<div class="ci" style="padding:10px 0">None recorded.</div>'}</div>
+      <div><h4 class="bad">You're unfavored ▸ these answer you</h4>${loses.length?loses.map(row).join(''):'<div class="ci" style="padding:10px 0">None recorded.</div>'}</div></div>
+    <div class="ci" style="margin-top:14px">✓ = statistically distinguishable from 50% · % = win rate vs that deck · then play rate &amp; record</div></div>`;
+}
+
+// ---------------- META ----------------
+function renderMeta(decks,total,mu,byLabel){
+  const maxPlay=Math.max(...decks.map(d=>d.play),1e-6);
+  const sorted=decks.slice().sort((a,b)=>state.sort==='win'?(b.wr-a.wr||b.games-a.games):state.sort==='exp'?((b.expWR??0)-(a.expWR??0)||b.games-a.games):(b.games-a.games));
+  const arrow=k=>state.sort===k?' ↓':'';
+  const table=`<div class="scroll"><table class="list"><thead><tr><th>Archetype</th>
+    <th class="num sortable ${state.sort==='play'?'active':''}" onclick="setSort('play')">Play${arrow('play')}</th><th class="num">Games</th>
+    <th class="num sortable ${state.sort==='win'?'active':''}" onclick="setSort('win')">Win${arrow('win')}</th><th class="num">CI</th>
+    <th class="num sortable ${state.sort==='exp'?'active':''}" onclick="setSort('exp')">Exp WR${arrow('exp')}</th></tr></thead><tbody>`+
+    sorted.map(d=>`<tr class="${d.label===state.selected?'sel':''}" onclick="selDeck('${esc(d.label)}')"><td><div class="nm">${chips(d.label)}<span>${deckName(d.label)}</span></div></td>
+    <td class="num">${fmt1(d.play)}<div class="pbar"><i style="width:${(d.play/maxPlay*100).toFixed(0)}%"></i></div></td>
+    <td class="num" style="color:var(--muted)">${d.games}</td><td class="num" style="color:${wrColor(d.wr)}">${fmtWR(d.wr)}</td>
+    <td class="num ci">${fmtCI(d.ciLo,d.ciHi)}</td><td class="num" style="color:${d.expWR!=null?wrColor(d.expWR):'var(--faint)'}">${fmtWR(d.expWR)}</td></tr>`).join('')+`</tbody></table></div>`;
+
+  const top=decks.filter(d=>d.games>=MIN_GAMES).sort((a,b)=>b.games-a.games).slice(0,12);
+  let mx;
+  if(top.length<2){mx=`<div class="empty-state">Not enough decks with ${MIN_GAMES}+ games yet.</div>`;}
+  else{const cell=(r,c)=>{if(r.label===c.label)return `<td class="diag">—</td>`;const wr=muWR(mu,r.label,c.label),g=muGames(mu,r.label,c.label);if(wr==null)return `<td class="empty">·</td>`;
+    const e=mu[`${r.label}@@${c.label}`]||{wins:0,games:0},cls=(g>0&&g<3?'low ':'')+(muSig(mu,r.label,c.label)?'sig':'');const tip=g?`${e.wins}/${g}`:'no games (prior)';
+    return `<td class="${cls.trim()}" style="background:${wrColor(wr)}" title="${deckName(r.label)} vs ${deckName(c.label)} — ${tip} · ${(wr*100).toFixed(0)}%">${(wr*100).toFixed(0)}</td>`;};
+    mx=`<div class="scroll"><table class="mx"><thead><tr><th></th><th class="lead">N</th><th class="lead">Exp<br>WR</th>`+
+      top.map(c=>`<th><div class="v" title="${c.label}" onclick="selDeck('${esc(c.label)}')">${deckName(c.label)}</div></th>`).join('')+`</tr></thead><tbody>`+
+      top.map(r=>`<tr><th title="${r.label}" onclick="selDeck('${esc(r.label)}')">${deckName(r.label)}</th><td class="lead">${r.games}</td><td class="lead" style="color:${r.expWR!=null?wrColor(r.expWR):'var(--faint)'}">${fmtWR(r.expWR)}</td>`+
+        top.map(c=>cell(r,c)).join('')+`</tr>`).join('')+`</tbody></table></div>
+      <div class="legend"><span>Unfavored</span><span class="scale"><i style="background:${wrColor(.35)}"></i><i style="background:${wrColor(.5)}"></i><i style="background:${wrColor(.65)}"></i></span><span>Favored · row vs column · ● = significant (CI excludes 50%) · faded = thin</span></div>`;}
+
+  // pocket picks
+  const plays=decks.map(d=>d.play).sort((a,b)=>a-b);const med=plays[Math.floor(plays.length/2)]||0;
+  const pocket=decks.filter(d=>d.play<=med&&d.games>=MIN_GAMES&&d.expWR!=null&&d.expWR>0.5).sort((a,b)=>b.expWR-a.expWR).slice(0,6);
+  const pocketHtml=pocket.length?`<div class="scroll"><table class="list"><thead><tr><th>Sleeper</th><th class="num">Exp WR</th><th class="num">Play</th><th class="num">Games</th></tr></thead><tbody>`+
+    pocket.map(d=>`<tr onclick="selDeck('${esc(d.label)}')"><td><div class="nm">${chips(d.label)}<span>${deckName(d.label)}</span></div></td><td class="num" style="color:${wrColor(d.expWR)}">${fmtWR(d.expWR)}</td><td class="num" style="color:var(--muted)">${fmt1(d.play)}</td><td class="num" style="color:var(--faint)">${d.games}</td></tr>`).join('')+`</tbody></table></div>`
+    :`<div class="empty-state">No clear sleepers yet — needs more data (low-play decks with a winning record vs the field).</div>`;
+
+  return renderDetail(decks,mu,byLabel)+`
+    <section><div class="head"><h2>Meta</h2><span class="note">${decks.length} archetypes · ${total} appearances · click a deck for matchups</span><span class="spacer"></span><button class="linkbtn" onclick="downloadCSV()">Download CSV</button></div>${table}</section>
+    <section><div class="head"><h2>Matchup matrix</h2><span class="note">top ${Math.min(12,top.length)} by play rate</span></div>${mx}</section>
+    <section><div class="head"><h2>Pocket picks</h2><span class="note">under-played decks that beat the field — tournament surprises</span></div>${pocketHtml}</section>`;
+}
+
+// ---------------- CONQUEST ----------------
+function deckOptions(decks,selected){return `<option value="">— pick deck —</option>`+decks.slice().sort((a,b)=>b.games-a.games).map(d=>`<option value="${d.label}" ${d.label===selected?'selected':''}>${deckName(d.label)} (${regionsOf(d.label).join('/')})</option>`).join('');}
+function lineupBox(cls,title,who,arr,decks){return `<div class="box"><h4 class="${cls}">${title}</h4><div class="sel3">`+
+  [0,1,2].map(i=>`<select onchange="setLineup('${who}',${i},this.value)">${deckOptions(decks,arr[i])}</select>`).join('')+`</div></div>`;}
+
+function renderConquest(decks,mu){
+  const mw=makeMatchWin(mu);
+  const cand=decks.slice().sort((a,b)=>b.games-a.games).slice(0,CAND_N);
+  const sub=`<div class="submodes" id="submodes">
+    <button data-v="build" aria-pressed="${state.conqMode==='build'}" onclick="setConq('build')">Build vs meta</button>
+    <button data-v="counter" aria-pressed="${state.conqMode==='counter'}" onclick="setConq('counter')">Counter a lineup</button>
+    <button data-v="ban" aria-pressed="${state.conqMode==='ban'}" onclick="setConq('ban')">Ban helper</button></div>`;
+
+  if(state.conqMode==='build'){
+    const field=decks.filter(d=>d.play>=FIELD_MIN);
+    const coverage=L=>{let num=0,den=0;for(const D of field){const best=Math.max(...L.map(x=>muCalc(mu,x,D.label)));num+=D.play*best;den+=D.play;}return den?num/den:0;};
+    const weakest=L=>{let w=null,wv=2;for(const D of field){const best=Math.max(...L.map(x=>muCalc(mu,x,D.label)));if(best<wv){wv=best;w=D;}}return {D:w,v:wv};};
+    const lineups=[];for(let i=0;i<cand.length;i++)for(let j=i+1;j<cand.length;j++)for(let m=j+1;m<cand.length;m++){const L=[cand[i].label,cand[j].label,cand[m].label];if(state.requireDeck&&!L.includes(state.requireDeck))continue;if(legalLineup(L))lineups.push(L);}
+    const scored=lineups.map(L=>{const cov=coverage(L);const subs=L.map((_,idx)=>coverage(L.filter((_,k)=>k!==idx)));const pb=Math.min(...subs);return {L,cov,postBan:pb,linchpin:L[subs.indexOf(pb)],weak:weakest(L)};}).sort((a,b)=>b.cov-a.cov).slice(0,12);
+    const opts=`<option value="">— any deck —</option>`+decks.slice().sort((a,b)=>b.games-a.games).map(d=>`<option value="${d.label}" ${d.label===state.requireDeck?'selected':''}>${deckName(d.label)} (${regionsOf(d.label).join('/')})</option>`).join('');
+    const cards=scored.length?`<div class="lineups">`+scored.map((x,i)=>`<div class="conq ${i===0?'top':''}"><div class="rank">#${i+1}</div><div class="cov" style="color:${wrColor(x.cov)}">${fmt1(x.cov)}</div><div class="covk">field coverage</div>
+      <div class="decks">${x.L.map(l=>`<div class="d" onclick="selDeckGo('${esc(l)}')">${chips(l)}<span>${deckName(l)}</span>${l===x.linchpin?'<span class="lp">ban bait</span>':''}</div>`).join('')}</div>
+      <div class="foot">After worst ban: <b>${fmt1(x.postBan)}</b> · weakest vs <b>${x.weak.D?deckName(x.weak.D.label):'—'}</b> (${(x.weak.v*100).toFixed(0)}%)</div></div>`).join('')+`</div>`:`<div class="empty-state"><b>No legal lineups</b>Widen the window or clear the required deck.</div>`;
+    return sub+`<div class="conqbar"><span>Require deck:</span><select onchange="setRequire(this.value)">${opts}</select><span style="color:var(--faint)">champion-lock enforced · coverage = your best deck's win% into the average opponent</span></div>
+      <section style="margin-top:0"><div class="head"><h2>Best lineups vs the meta</h2><span class="note">top legal 3-deck combos from the ${cand.length} most-played</span></div>${cards}</section>`;
   }
-];
 
-/* ===================== STATE ===================== */
-let CONFIG=null, S, REC=[], REPLAY=false, LIVE=null, SPEED=900, curP=null;
-const wait=ms=>new Promise(r=>setTimeout(r,ms));
-function expand(list){ const o=[]; (list||[]).forEach(e=>{ for(let i=0;i<e.count;i++) o.push(e.id); }); return o; }
-function newUnit(id){ const c=CARDS[id]; return {uid:S.uid++,id,name:c.name,code:c.code,set:c.set,power:c.power,health:c.health,keywords:[...(c.keywords||[])],buffed:false,fresh:true}; }
+  if(state.requireDeck){/*noop*/}
+  if(!state.oppLineup)state.oppLineup=pickLineup(decks,null);
+  if(!state.myLineup)state.myLineup=pickLineup(decks,new Set(state.oppLineup.filter(Boolean)));
 
-function init(){
-  S={round:0,manaMax:0,manaSpent:0,spellMana:0,attackToken:false,enemyNexus:CONFIG.enemyNexus,myNexus:CONFIG.myNexus,
-     board:[],enemyBoard:[],combat:null,uid:1,hid:1,hand:[],firstCardPlayed:false,over:false,selecting:null,nextSummonBuff:0};
-  expand(CONFIG.hand).forEach(id=>S.hand.push({hid:S.hid++,id}));
-  expand(CONFIG.enemyBoard).forEach(id=>S.enemyBoard.push(newUnit(id)));
-  REC=[];REPLAY=false;LIVE=null;
-  document.getElementById('log').innerHTML='';
-  document.getElementById('obj').innerHTML='Bring the enemy Nexus from <b>'+CONFIG.enemyNexus+'</b> to <b>0</b> by the end of round 2. You only attack on round 2.';
-  startRound(0); record('Starting board','start');
-  log('Puzzle started. Goal: '+CONFIG.enemyNexus+' damage by end of round 2.','gold');
-}
-function startRound(i){ S.round=i;S.manaMax=CONFIG.rounds[i].mana;S.manaSpent=0;S.attackToken=CONFIG.rounds[i].attackToken;S.firstCardPlayed=false;render(); }
-function manaAvail(){ return S.manaMax-S.manaSpent; }
-function canAfford(c){ return c.type==='unit'?manaAvail()>=c.cost:manaAvail()+S.spellMana>=c.cost; }
-function pay(c){ if(c.type==='unit'){S.manaSpent+=c.cost;return;} let n=c.cost;const fs=Math.min(S.spellMana,n);S.spellMana-=fs;n-=fs;S.manaSpent+=n; }
-function record(cap,type,dmg){ REC.push({cap,type,dmg,s:JSON.parse(JSON.stringify({round:S.round,manaMax:S.manaMax,manaSpent:S.manaSpent,spellMana:S.spellMana,attackToken:S.attackToken,enemyNexus:S.enemyNexus,myNexus:S.myNexus,board:S.board,enemyBoard:S.enemyBoard,combat:S.combat,hand:S.hand,nextSummonBuff:S.nextSummonBuff,scripted:S.scripted,stepIdx:S.stepIdx}))}); }
-
-function summon(id,side){
-  side=side||'board'; const c=CARDS[id]; const u=newUnit(id);
-  if(side==='board' && S.nextSummonBuff>0){ u.power+=S.nextSummonBuff; if(!u.keywords.includes('SpellShield'))u.keywords.push('SpellShield'); u.buffed=true;
-    log(c.name+' enters with +'+S.nextSummonBuff+'|+0 & SpellShield (Shroud).','good'); S.nextSummonBuff=0; }
-  S[side].push(u);
-  log((side==='enemyBoard'?'Enemy summons ':'Summoned ')+c.name+' ('+u.power+'/'+u.health+').');
-  if(side==='board'){ if(c.effect==='attune'){S.spellMana=Math.min(3,S.spellMana+1);log(c.name+': +1 spell mana.','good');}
-    if(c.effect==='summon_prey'){summon('prey','board');} }
-  return u;
-}
-function selectAlly(p,cb){ if(S.board.length===0){log('No ally to sacrifice.','bad');return;} S.selecting={cb,prompt:p};log('\u25B6 '+p+' — click a unit on your board.','gold');render(); }
-function killUnit(u,reason){ S.board=S.board.filter(x=>x.uid!==u.uid); log('\u2020 '+u.name+' '+(reason||'died')+'.','bad'); }
-
-function playFromHand(hid){
-  if(S.over||S.selecting||REPLAY) return;
-  const slot=S.hand.find(h=>h.hid===hid); if(!slot) return;
-  const c=CARDS[slot.id];
-  if(!canAfford(c)){log('Not enough mana for '+c.name+'.','bad');return;}
-  if(c.killAlly&&S.board.length===0){log(c.name+': you need an ally to sacrifice.','bad');return;}
-  const consume=()=>{ S.hand=S.hand.filter(h=>h.hid!==slot.hid); S.firstCardPlayed=true; };
-  if(c.effect==='wings_choice'){
-    askModal('The Wings and The Wave','Play it as which form?',[
-      {label:'First Wave (two 0/1)',fn:()=>{pay(c);consume();summon('first_wave','board');render();record('Play First Wave','play');}},
-      {label:'Last Wind (3/3, kill ally)',cls:'attack',fn:()=>{if(S.board.length===0){log('No ally to sacrifice.','bad');render();return;}pay(c);consume();selectAlly('Sacrifice an ally for Last Wind',(v)=>{killUnit(v,'sacrificed (Last Wind)');summon('last_wind','board');record('Play Last Wind','play');});}}
-    ]); return;
+  if(state.conqMode==='counter'){
+    const O=state.oppLineup.filter(Boolean);
+    let body;
+    if(O.length<3){body=`<div class="empty-state">Pick the opponent's three decks above.</div>`;}
+    else{const lineups=[];for(let i=0;i<cand.length;i++)for(let j=i+1;j<cand.length;j++)for(let m=j+1;m<cand.length;m++){const L=[cand[i].label,cand[j].label,cand[m].label];if(legalLineup(L))lineups.push(L);}
+      const scored=lineups.map(L=>({L,...banHelper(L,O,mw)})).sort((a,b)=>b.matchWin-a.matchWin).slice(0,9);
+      body=`<div class="lineups">`+scored.map((x,i)=>`<div class="conq ${i===0?'top':''}"><div class="rank">#${i+1}</div><div class="cov" style="color:${wrColor(x.matchWin)}">${fmt1(x.matchWin)}</div><div class="covk">match win vs them</div>
+        <div class="decks">${x.L.map(l=>`<div class="d" onclick="selDeckGo('${esc(l)}')">${chips(l)}<span>${deckName(l)}</span></div>`).join('')}</div>
+        <div class="foot">Ban their <b>${deckName(x.banTheir)}</b> · they'll likely ban your <b>${deckName(x.theyBan)}</b></div></div>`).join('')+`</div>`;}
+    return sub+`<div class="lpick">${lineupBox('them','Opponent lineup','opp',state.oppLineup,decks)}<div class="box" style="display:flex;align-items:center;justify-content:center;color:var(--faint);font:500 12px/1.6 'Spline Sans Mono',monospace;text-align:center">Pick the 3 decks you expect to face.<br>We find your best legal counter-lineups.</div></div>
+      <section style="margin-top:0"><div class="head"><h2>Best counter-lineups</h2><span class="note">scored by expected match win after optimal bans</span></div>${body}</section>`;
   }
-  if(c.killAlly){ pay(c);consume(); selectAlly('Sacrifice an ally for '+c.name,(v)=>{killUnit(v,'sacrificed ('+c.name+')');resolveCard(slot.id);}); return; }
-  if(c.type==='spell'){ pay(c);consume();
-    if(c.effect==='shroud'){ S.nextSummonBuff=(S.nextSummonBuff||0)+1; log('\u2726 Shroud of Darkness: next summon +1|+0 & SpellShield (pending +'+S.nextSummonBuff+'|+0).','good'); }
-    render();record('Cast '+c.name,'play'); return; }
-  pay(c);consume(); resolveCard(slot.id);
-}
-function resolveCard(id){ summon(id,'board'); render();record('Play '+CARDS[id].name,'play'); }
-function endTurn(){ if(S.over||REPLAY)return; if(S.round===0){const carry=Math.min(3-S.spellMana,manaAvail());if(carry>0){S.spellMana+=carry;log('Unspent mana \u2192 '+carry+' spell mana.');}startRound(1);log('— Round 2. Attack token + 2 mana. —','gold');record('Round 2 begins','endturn');} }
 
-/* ===================== COMBAT ===================== */
-function legalBlock(a,b){ if(a.keywords.includes('Elusive')&&!b.keywords.includes('Elusive'))return false; if(a.keywords.includes('Fearsome')&&b.power<3)return false; return true; }
-function computeCombat(){
-  const pairs=S.board.map(u=>({a:u,b:null})); const used={};
-  [...pairs].sort((x,y)=>y.a.power-x.a.power).forEach(p=>{ let best=null,score=-1;
-    S.enemyBoard.forEach(b=>{ if(used[b.uid]||!legalBlock(p.a,b))return;
-      const prevent=p.a.keywords.includes('Overwhelm')?Math.min(b.health,p.a.power):p.a.power; if(prevent<=0)return;
-      const sc=prevent*100+(b.health>p.a.power?20:0)+b.health; if(sc>score){score=sc;best=b;} });
-    if(best){p.b=best;used[best.uid]=1;} });
-  let nexus=0;const deadA=[],deadB=[];
-  pairs.forEach(p=>{const a=p.a,b=p.b; if(!b){nexus+=a.power;return;}
-    if(a.keywords.includes('Overwhelm'))nexus+=Math.max(0,a.power-b.health);
-    if(a.power>=b.health)deadB.push(b.uid); if(b.power>=a.health)deadA.push(a.uid);});
-  return {pairs,nexus,deadA,deadB};
+  // ban helper
+  const M=state.myLineup.filter(Boolean),O=state.oppLineup.filter(Boolean);
+  let res;
+  if(M.length<3||O.length<3){res=`<div class="empty-state">Pick all three decks for both lineups.</div>`;}
+  else{const bh=banHelper(M,O,mw);const meIllegal=!legalLineup(M),themIllegal=!legalLineup(O);
+    const g=`<table class="grid33"><thead><tr><th></th>${O.map(o=>`<th title="${o}">${deckName(o)}</th>`).join('')}</tr></thead><tbody>`+
+      M.map(m=>`<tr><th title="${m}">${deckName(m)}</th>${O.map(o=>{const wr=muCalc(mu,m,o);return `<td style="background:${wrColor(wr)}">${(wr*100).toFixed(0)}</td>`;}).join('')}</tr>`).join('')+`</tbody></table>`;
+    res=`<div class="banres"><div class="big"><div><div class="mk">Expected match win</div><div class="mwin" style="color:${wrColor(bh.matchWin)}">${fmt1(bh.matchWin)}</div></div>
+      <div class="rec"><div class="mk">Plan</div>Ban their <span class="ban">${deckName(bh.banTheir)}</span><br>They'll likely ban your <span class="exposed">${deckName(bh.theyBan)}</span></div></div>
+      ${meIllegal||themIllegal?`<div class="ci" style="color:var(--bad);margin-top:12px">⚠ ${meIllegal?'Your':'Opponent'} lineup shares a champion (not champion-lock legal).</div>`:''}
+      <div class="ci" style="margin-top:14px">Your decks (rows) win% vs theirs (cols):</div>${g}</div>`;}
+  return sub+`<div class="lpick">${lineupBox('me','Your lineup','my',state.myLineup,decks)}${lineupBox('them','Opponent lineup','opp',state.oppLineup,decks)}</div>
+    <section style="margin-top:0"><div class="head"><h2>Ban helper</h2><span class="note">optimal ban &amp; expected result, both sides champion-locked</span></div>${res}</section>`;
 }
-async function doAttack(){
-  if(S.over||!S.attackToken||REPLAY)return;
-  if(S.board.length===0){log('No attackers on board.','bad');return;}
-  const plan=computeCombat();
-  S.combat={lanes:plan.pairs.map(p=>({a:p.a,b:p.b,aDie:plan.deadA.includes(p.a.uid),bDie:p.b?plan.deadB.includes(p.b.uid):false})),nexus:plan.nexus};
-  const blkUids=plan.pairs.filter(p=>p.b).map(p=>p.b.uid);
-  S.board=S.board.filter(u=>!plan.pairs.some(p=>p.a.uid===u.uid));
-  S.enemyBoard=S.enemyBoard.filter(u=>!blkUids.includes(u.uid));
-  render(); record('Combat on the battlefield','attack');
-  await wait(460);
-  const bf=document.getElementById('battlefield');
-  S.combat.lanes.forEach(l=>{ if(l.b){['[data-uid="'+l.a.uid+'"]','[data-uid="'+l.b.uid+'"]'].forEach(q=>{const e=bf.querySelector(q);if(e)e.classList.add('hit');});} });
-  if(plan.nexus>0) nexusHit(plan.nexus);
-  await wait(360);
-  S.combat.lanes.forEach(l=>{ if(l.aDie){const e=bf.querySelector('[data-uid="'+l.a.uid+'"]');if(e)e.classList.add('dying');} if(l.b&&l.bDie){const e=bf.querySelector('[data-uid="'+l.b.uid+'"]');if(e)e.classList.add('dying');} });
-  await wait(400);
-  S.enemyNexus-=plan.nexus;
-  S.combat.lanes.forEach(l=>{ if(!l.aDie){l.a.fresh=false;S.board.push(l.a);} if(l.b&&!l.bDie){l.b.fresh=false;S.enemyBoard.push(l.b);} });
-  S.combat=null;
-  log('\u2694 Attack: '+plan.nexus+' to the Nexus'+(plan.deadB.length?', '+plan.deadB.length+' blocker(s) slain':'')+'.','gold');
-  render(); S.over=true; record('Attack for '+plan.nexus,'resolve');
-  endScreen(S.enemyNexus<=0,plan.nexus);
-}
-function nexusHit(dmg){ const el=document.getElementById('enemyNexusEl'); el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');
-  const pop=document.createElement('div');pop.className='dmg-pop';pop.textContent='-'+dmg;el.appendChild(pop);setTimeout(()=>pop.remove(),1000); }
 
-/* ===================== RENDER ===================== */
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function imgSources(code,set){const dd='https://dd.b.pvp.net/latest/';const a=[dd+'set'+set+'/en_us/img/cards/'+code+'.png',dd+'set'+set+'b/en_us/img/cards/'+code+'.png','https://cdn.mobalytics.gg/assets/lor/cards/set'+set+'/en_us/'+code+'.png','https://wiki.leagueoflegends.com/en-us/images/'+code+'.png'];if(set===6)a.splice(1,0,dd+'set6cde/en_us/img/cards/'+code+'.png');return a;}
-function imgFail(img){let i=parseInt(img.dataset.i||'0',10)+1;const s=(img.dataset.srcs||'').split('|').filter(Boolean);if(i<s.length){img.dataset.i=i;img.src=s[i];return;}const d=document.createElement('div');d.className='art fallback';d.textContent=img.alt;img.replaceWith(d);}
-function artEl(code,set,name){if(!code)return '<div class="art fallback">'+esc(name)+'</div>';const s=imgSources(code,set);return '<img class="art" loading="lazy" alt="'+esc(name)+'" data-i="0" data-srcs="'+esc(s.join('|'))+'" src="'+esc(s[0])+'" onerror="imgFail(this)">';}
-function kwTags(a){if(!a||!a.length)return '';return '<div class="kw">'+a.map(k=>'<span>'+esc(k)+'</span>').join('')+'</div>';}
-function statBadges(u){return '<span class="pwr">'+u.power+'</span><span class="hlt">'+u.health+'</span>';}
-function unitHTML(u,foe){return '<div class="unit '+(u.buffed?'buffed ':'')+(u.fresh?'fresh ':'')+(foe?'foe':'')+'" data-uid="'+u.uid+'"><div class="frame">'+artEl(u.code,u.set,u.name)+kwTags(u.keywords)+statBadges(u)+'</div><div class="nm">'+esc(u.name)+'</div></div>';}
-function pips(c,max,full,cls){let h='';for(let i=0;i<max;i++)h+='<span class="pip '+cls+' '+(i<full?'full':'')+'"></span>';if(max===0)h='<span style="opacity:.4">0</span>';c.innerHTML=h;}
+// ---------------- TRENDS ----------------
+function renderTrends(decks,mu,inWin){
+  if(inWin.length<2)return `<div class="empty-state"><b>Not enough days</b>Trends need at least two days of data in the window.</div>`;
+  const recentCut=inWin[Math.max(0,inWin.length-2)]; // poslední ~2 dny = "recent"
+  const tot={recent:0,earlier:0};
+  decks.forEach(d=>{d._r={games:0,wins:0};d._e={games:0,wins:0};for(const[day,x]of Object.entries(d.byDay||{})){const t=day>=recentCut?'_r':'_e';d[t].games+=x.games;d[t].wins+=x.wins;}tot.recent+=d._r.games;tot.earlier+=d._e.games;});
+  const rows=decks.map(d=>{const pr=tot.recent?d._r.games/tot.recent:0,pe=tot.earlier?d._e.games/tot.earlier:0;
+    const wrR=d._r.games?d._r.wins/d._r.games:null,wrE=d._e.games?d._e.wins/d._e.games:null;
+    return {label:d.label,dPlay:pr-pe,pr,pe,rg:d._r.games,eg:d._e.games,wrR,wrE,dWR:(wrR!=null&&wrE!=null)?wrR-wrE:null};}).filter(r=>r.rg+r.eg>=MIN_GAMES);
+  const risers=rows.slice().sort((a,b)=>b.dPlay-a.dPlay).slice(0,8);
+  const fallers=rows.slice().sort((a,b)=>a.dPlay-b.dPlay).slice(0,8);
+  const row=(r,up)=>`<div class="trow" onclick="selDeckGo('${esc(r.label)}')"><div class="nm">${chips(r.label)}<span>${deckName(r.label)}</span></div>
+    <div class="sub">${(r.pe*100).toFixed(1)}% → ${(r.pr*100).toFixed(1)}%</div>
+    <div class="delta" style="color:${up?'var(--good)':'var(--bad)'}">${r.dPlay>=0?'+':''}${(r.dPlay*100).toFixed(1)}</div></div>`;
+  return `<div class="head"><h2>Meta trends</h2><span class="note">play-rate change · recent days vs earlier in the window · click a deck for detail</span></div>
+    <div class="trend"><div><h4 class="cols" style="color:var(--good);font:600 10.5px/1 'Spline Sans Mono',monospace;letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px">▲ Rising</h4>${risers.length?risers.map(r=>row(r,1)).join(''):'<div class="ci" style="padding:10px 0">No data.</div>'}</div>
+      <div><h4 style="color:var(--bad);font:600 10.5px/1 'Spline Sans Mono',monospace;letter-spacing:.16em;text-transform:uppercase;margin:0 0 6px">▼ Falling</h4>${fallers.length?fallers.map(r=>row(r,0)).join(''):'<div class="ci" style="padding:10px 0">No data.</div>'}</div></div>
+    <div class="ci" style="margin-top:16px">Numbers are play-rate share now vs earlier. With a short window the split is coarse; it sharpens as more days accumulate.</div>`;
+}
 
 function render(){
-  document.getElementById('enemyHp').textContent=Math.max(0,S.enemyNexus);
-  document.getElementById('myHp').textContent=Math.max(0,S.myNexus);
-  document.getElementById('enemyBar').style.width=Math.max(0,S.enemyNexus/CONFIG.enemyNexus*100)+'%';
-  document.getElementById('myBar').style.width=Math.max(0,S.myNexus/CONFIG.myNexus*100)+'%';
-  document.getElementById('roundLbl').textContent=S.round+1;
-  pips(document.getElementById('manaPips'),S.manaMax,manaAvail(),'');
-  pips(document.getElementById('spellPips'),3,S.spellMana,'spell');
-  document.getElementById('tokenChip').innerHTML='Attack Token: <b class="'+(S.attackToken?'token-on':'')+'">'+(S.attackToken?'YES \u2694':'\u2014')+'</b>';
-
-  const eb=document.getElementById('enemyBoard');
-  eb.className='board foe'+(S.enemyBoard.length?'':' empty'); eb.innerHTML=S.enemyBoard.map(u=>unitHTML(u,true)).join('');
-
-  const bf=document.getElementById('battlefield');
-  if(S.combat){ bf.className='battlefield active';
-    bf.innerHTML=S.combat.lanes.map(l=>'<div class="lane"><div class="lslot blk">'+(l.b?unitHTML(l.b,true):'<div class="noblk">unblocked</div>')+'</div><div class="lslot atk">'+unitHTML(l.a,false)+'</div></div>').join('');
-  } else { bf.className='battlefield empty'; bf.innerHTML=''; }
-
-  const bd=document.getElementById('board');
-  bd.className='board'+(S.board.length?'':' empty');
-  bd.innerHTML=S.board.map(u=>unitHTML(u,false)).join('');
-  const eNex=document.getElementById('enemyNexusEl');
-  if(eNex){ eNex.classList.remove('pickable'); eNex.onclick=null; eNex.style.cursor=''; }
-  if(S.selecting&&!REPLAY){
-    const sel=S.selecting, side=sel.side||'ally', type=sel.type||null;
-    const wire=(cont,units,isEnemy)=>{ if((side==='ally'&&isEnemy)||(side==='enemy'&&!isEnemy))return;
-      cont.querySelectorAll('.unit').forEach(el=>{ const u=units.find(x=>x.uid==el.dataset.uid); if(!u)return; if(type==='follower'&&u.champ)return;
-        el.classList.add('pickable'); el.onclick=()=>{const cb=sel.cb;S.selecting=null;cb(u);render();}; }); };
-    wire(bd,S.board,false); wire(eb,S.enemyBoard,true);
-    if(sel.allowNexus&&eNex){ eNex.classList.add('pickable'); eNex.style.cursor='pointer'; eNex.onclick=()=>{const cb=sel.cb;S.selecting=null;cb('nexus');render();}; }
-  }
-  setTimeout(()=>{S.board.concat(S.enemyBoard).forEach(u=>u.fresh=false);},360);
-
-  const hand=document.getElementById('hand');
-  hand.innerHTML=S.hand.map(h=>{const c=(S.scripted?SCARDS:CARDS)[h.id];const afford=S.scripted?(sAfford(h)&&!S.over&&!REPLAY&&!S.selecting):(canAfford(c)&&!S.selecting&&!REPLAY&&!S.over);const sp=(c.type!=='unit');const shownCost=S.scripted?effCost(h):c.cost;
-    return '<div class="card '+(afford?'':'disabled')+'" data-hid="'+h.hid+'" title="'+esc(c.text||'')+'"><div class="frame"><div class="cost '+(sp?'spellable':'')+'">'+shownCost+'</div>'+artEl(c.code,c.set,c.name)+kwTags(c.keywords)+((c.type==='unit')?statBadges(c):'')+'</div><div class="nm">'+esc(c.name)+'</div></div>';}).join('');
-  if(!REPLAY) hand.querySelectorAll('.card:not(.disabled)').forEach(el=>el.onclick=()=>(S.scripted?playScripted:playFromHand)(+el.dataset.hid));
-
-  const ndc=document.getElementById('nextDrawChip');
-  if(ndc){ if(S.scripted&&S.nextDraw&&SCARDS[S.nextDraw]){ ndc.style.display=''; ndc.innerHTML='Next draw: <b class="token-on">'+esc(SCARDS[S.nextDraw].name.toUpperCase())+'</b>'; }
-    else { ndc.style.display='none'; } }
-
-  const et=document.getElementById('endTurnBtn'),ab=document.getElementById('attackBtn');
-  if(S.scripted){ et.style.display='none'; ab.style.display='none'; }
-  else { et.style.display=(S.round===0)?'block':'none'; et.disabled=(S.round!==0||S.over||REPLAY); ab.style.display=''; ab.disabled=!(S.attackToken&&!S.over&&!REPLAY&&S.board.length>0); }
+  const {deck,mu,inWin}=aggregate();KAPPA=estimateKappa(mu);
+  document.getElementById('kappa').textContent=state.smooth?`κ=${KAPPA.toFixed(0)}`:'raw';
+  const {decks,total}=computeDecks(deck,mu);
+  const root=document.getElementById('content');
+  if(total===0){state.selected=null;root.innerHTML=`<div class="empty-state"><b>No games here yet</b>Nothing for this region/format/window. ${state.region!=='all'?'This region may still be filling up.':'Try a wider window.'}</div>`;return;}
+  const byLabel=Object.fromEntries(decks.map(d=>[d.label,d]));
+  root.innerHTML = state.view==='conquest'?renderConquest(decks,mu):state.view==='trends'?renderTrends(decks,mu,inWin):renderMeta(decks,total,mu,byLabel);
 }
 
-/* ===================== SCRIPTED PUZZLE ENGINE ===================== */
-function sMk(name,p,h,kw){const m=SCODE[name];const u={uid:S.uid++,name,power:p,health:h,code:m?m.c:null,set:m?m.s:0,keywords:kw||[],champ:/^(Karma|Senna)/.test(name),fresh:true};
-  if(name==='Field Musicians'){u.fmCount=0;u.keywords=['0/3'];} return u;}
-function sAddHand(id){S.hand.push({hid:S.hid++,id});}
-function sDelHand(id){const i=S.hand.findIndex(x=>x.id===id);if(i>=0)S.hand.splice(i,1);}
-function sDelHid(hid){const i=S.hand.findIndex(x=>x.hid===hid);if(i>=0)S.hand.splice(i,1);}
-function sDelUnit(name){const i=S.board.findIndex(u=>u.name.indexOf(name)===0);if(i>=0)S.board.splice(i,1);}
-function sMana(g,sp){S.manaMax=g;S.manaSpent=0;S.spellMana=sp;}
-function sWeakestAlly(){ return S.board.slice().sort((a,b)=>(a.health-b.health)||(a.power-b.power))[0]; }
-function sFieldTick(){ const fm=S.board.find(x=>x.name.indexOf('Field')===0 && typeof x.fmCount==='number'); if(!fm)return;
-  fm.fmCount++;
-  if(fm.fmCount>=3){ fm.keywords=(fm.keywords||[]).filter(k=>!/\/3$/.test(k)); fm.fmCount=null; S.spellMana=3; sAddHand('soul_cleave'); S.nextDraw=null; log('\u266a Field Musicians activates: spell mana refilled & drew Soul Cleave.','good'); }
-  else { fm.keywords=[fm.fmCount+'/3']; } }
-function sSummon(name,p,h,kw){ const u=sMk(name,p,h,kw); S.board.push(u); sFieldTick(); return u; }
-function initScripted(p){
-  S={uid:1,hid:1,scripted:true,over:false,selecting:null,combat:null,round:0,attackToken:false,nextSummonBuff:0,
-     manaMax:p.gems,manaSpent:0,spellMana:p.spell,enemyNexus:p.enemyNexus,myNexus:p.myNexus,enemyStart:p.enemyNexus,
-     board:[],enemyBoard:[],hand:[],stepIdx:0,nextDraw:p.nextDraw||null,
-     sennaKills:0,goHardCount:0,pybPending:false};
-  CONFIG={enemyNexus:p.enemyNexus,myNexus:p.myNexus};
-  (p.ourBoard||[]).forEach(u=>S.board.push(sMk(u.name,u.p,u.h,u.kw)));
-  (p.enemyBoard||[]).forEach(u=>S.enemyBoard.push(sMk(u.name,u.p,u.h,u.kw)));
-  (p.hand||[]).forEach(id=>S.hand.push({hid:S.hid++,id}));
-  REC=[];REPLAY=false;LIVE=null;
-  document.getElementById('log').innerHTML='';
-  document.getElementById('obj').innerHTML='Bring the enemy Nexus from <b>'+p.enemyNexus+'</b> to <b>0</b> this round.';
-  record('Starting board','start');
+window.setSort=k=>{state.sort=k;render();};
+window.selDeck=l=>{state.selected=(state.selected===l?null:l);render();if(state.selected)document.querySelector('.detail')?.scrollIntoView({behavior:'smooth',block:'nearest'});};
+window.selDeckGo=l=>{state.view='meta';state.selected=l;syncTabs();render();document.querySelector('.detail')?.scrollIntoView({behavior:'smooth',block:'nearest'});};
+window.clearSel=()=>{state.selected=null;render();};
+window.setRequire=v=>{state.requireDeck=v;render();};
+window.setConq=m=>{state.conqMode=m;render();};
+window.setLineup=(who,i,v)=>{const arr=who==='my'?(state.myLineup||=['','','']):(state.oppLineup||=['','','']);arr[i]=v;render();};
+window.downloadCSV=()=>{const {deck,mu}=aggregate();const {decks}=computeDecks(deck,mu);const rows=[['archetype','games','play_rate','win_rate','ci_low','ci_high','exp_wr_vs_field']];
+  decks.sort((a,b)=>b.games-a.games).forEach(d=>rows.push([deckName(d.label)+' '+regionsOf(d.label).join('/'),d.games,(d.play*100).toFixed(2),(d.wr*100).toFixed(1),(d.ciLo*100).toFixed(1),(d.ciHi*100).toFixed(1),d.expWR!=null?(d.expWR*100).toFixed(1):'']));
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`lnd-meta-${state.region}-${state.format}-${state.window||'patch'}d.csv`;a.click();URL.revokeObjectURL(a.href);};
+
+function syncTabs(){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===state.view));}
+function buildSeg(id,opts,key,cb){const el=document.getElementById(id);el.innerHTML=opts.map(o=>`<button data-v="${o.v}" aria-pressed="${state[key]==o.v}">${o.t}</button>`).join('');
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>{let v=b.dataset.v;if(key==='window')v=v==='patch'?null:Number(v);if(key==='smooth')v=v==='1';state[key]=v;if(key!=='smooth'&&key!=='view')state.selected=null;el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));(cb||render)();});}
+
+function init(){
+  let tg=0;for(const d of Object.keys(STATS.days||{}))for(const r of Object.values(STATS.days[d]))for(const f of Object.values(r))tg+=Object.values(f.deckGames||{}).reduce((a,b)=>a+b.games,0);
+  const upd=STATS.generatedAt?new Date(STATS.generatedAt):null;
+  document.getElementById('meta').innerHTML=`<span>Patch <b>${STATS.patchStart||'—'}</b></span><span class="dot">/</span><span><b>${Math.round(tg/2)}</b> matches</span><span class="dot">/</span><span>updated <b>${upd?upd.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}</b></span>`;
+  const regions=STATS.regions||['europe','americas','asia'];
+  buildSeg('seg-region',[{v:'all',t:'All'},...regions.map(r=>({v:r,t:REGION_LABEL[r]||r}))],'region');
+  buildSeg('seg-format',[{v:'all',t:'All'},{v:'standard',t:'Standard'},{v:'eternal',t:'Eternal'}],'format');
+  buildSeg('seg-window',[{v:'2',t:'2d'},{v:'7',t:'7d'},{v:'14',t:'14d'},{v:'patch',t:'Patch'}],'window');
+  buildSeg('seg-smooth',[{v:'1',t:'Smoothed'},{v:'0',t:'Raw'}],'smooth');
+  buildSeg('tabs',[{v:'meta',t:'Meta'},{v:'conquest',t:'Conquest'},{v:'trends',t:'Trends'}],'view');
+  document.getElementById('foot').innerHTML='Riot LoR API · archetypes by champions + regions. <b>Smoothed</b> = empirical-Bayes shrinkage (κ pseudo-games → 50%). <b>Exp WR</b> = win rate vs the average opponent (play-weighted). <b>Conquest</b> tools enforce champion-lock; match win uses a minimax model over deck choice and bans. Small samples = soft numbers; everything sharpens as data grows.';
   render();
-  log('Free play: cast spells in any order and pick any targets. Find the line that burns the Nexus to 0.','gold');
 }
-/* ---- free-play simulation ---- */
-function nKarma(){ return S.board.filter(u=>u.name.indexOf('Karma')===0).length; }
-function sennaLv2(){ return S.board.some(u=>u.name==='Senna Lv2'); }
-function effCost(item){ const c=SCARDS[item.id]; if(item.id==='pack_your_bags') return 0; let cost=c.cost;
-  if(c.type==='spell' && sennaLv2()) cost=Math.max(0,cost-1);
-  return cost; }
-function sAfford(item){ const c=SCARDS[item.id]; const cost=effCost(item); return c.type==='unit'?manaAvail()>=cost:(manaAvail()+S.spellMana)>=cost; }
-function sPay(item){ const c=SCARDS[item.id]; let n=effCost(item); if(c.type==='unit'){S.manaSpent+=n;return;} const fs=Math.min(S.spellMana,n);S.spellMana-=fs;n-=fs;S.manaSpent+=n; }
-function sImmune(u){ return !!u && (u.keywords||[]).indexOf('Respite')>=0; }
-function sRemove(u){ S.board=S.board.filter(x=>x!==u); S.enemyBoard=S.enemyBoard.filter(x=>x!==u); }
-function sCheckSenna(){ if(S.sennaKills>=3){ const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn&&sn.name!=='Senna Lv2'){ sn.name='Senna Lv2'; sn.power=5; sn.health=5; sn.keywords=['Lv2']; const m=SCODE['Senna Lv2']; if(m){sn.code=m.c;sn.set=m.s;} sn.buffed=true; log('\u2726 Senna levels up \u2192 5/5. Your spells now cost 1 less.','good'); } } }
-function sSpellDamage(u,n){ if(!u||sImmune(u))return false; u.health-=n; if(u.health<=0){ sRemove(u); S.sennaKills++; sCheckSenna(); return true; } return false; }
-function sSpellKill(u){ if(!u||sImmune(u))return false; sRemove(u); S.sennaKills++; sCheckSenna(); return true; }
-function sDrain(t,n){ if(t==='nexus'){ S.enemyNexus-=n; } else if(t){ sSpellDamage(t,n); } S.myNexus=Math.min(CONFIG.myNexus,S.myNexus+n); }
-
-const PLAYSPEC = {
-  tag_out:{target:[{side:'ally',prompt:'Tag Out \u2014 recall an ally'}]},
-  fading_memories:{target:[{side:'both',type:'follower',prompt:'Fading Memories \u2014 pick a follower'}]},
-  butcher:{target:[{side:'ally',prompt:'Ravenous Butcher \u2014 sacrifice an ally'}]},
-  thread_needle:{target:[{side:'ally',prompt:'Thread the Needle \u2014 kill an ally'},{side:'enemy',prompt:'Thread the Needle \u2014 deal its Power to an enemy'}]},
-  absorb_soul:{target:[{side:'ally',prompt:'Absorb Soul \u2014 drain 4 from an ally'}]},
-  soul_cleave:{target:[{side:'ally',prompt:'Soul Cleave \u2014 target an ally'}]},
-  go_hard:{target:[{side:'both',allowNexus:true,prompt:'Go Hard \u2014 drain 1 (pick a unit or the enemy Nexus)'}]},
-  darkness:{target:[{side:'both',allowNexus:true,prompt:'Darkness \u2014 deal 2 (pick a unit or the enemy Nexus)'}]}
-};
-function sPickThen(item,spec,i,acc){
-  const t=spec.target[i];
-  S.selecting={prompt:t.prompt, side:t.side||'ally', type:t.type||null, allowNexus:!!t.allowNexus, cb:(u)=>{
-    acc.push(u);
-    if(i+1<spec.target.length) sPickThen(item,spec,i+1,acc);
-    else sResolve(item,acc);
-  }};
-  log('\u25B6 '+t.prompt,'gold'); render();
-}
-function playScripted(hid){
-  if(S.over||REPLAY||S.selecting) return;
-  const item=S.hand.find(x=>x.hid===hid); if(!item) return;
-  const c=SCARDS[item.id]; if(!c) return;
-  if(!sAfford(item)){ log('Not enough mana for '+c.name+'.','bad'); return; }
-  const spec=PLAYSPEC[item.id];
-  if(spec&&spec.target){ sPickThen(item,spec,0,[]); }
-  else sResolve(item,[]);
-}
-function sResolve(item,t){
-  const c=SCARDS[item.id];
-  sPay(item);
-  const casts=(c.type==='unit')?1:(nKarma()+1);
-  const prev=S.enemyNexus; let msg=c.name+'.';
-  switch(item.id){
-    case 'karma': sDelHid(item.hid); sSummon('Karma Lv2',5,4,['Lv2']); msg='Karma Lv2 summoned (5/4).'; break;
-    case 'prey': sDelHid(item.hid); sSummon('Prey',0,1); msg='Prey summoned.'; break;
-    case 'butcher': { sDelHid(item.hid); const a=t[0]; if(a) sRemove(a); sSummon('Ravenous Butcher',3,2,['Ephemeral']); msg='Ravenous Butcher summoned (sacrificed '+(a?a.name:'\u2014')+').'; break; }
-    case 'tag_out': { sDelHid(item.hid); const a=t[0]; const coins=1+nKarma(); if(a){ const wasPrey=a.name.indexOf('Prey')===0; sRemove(a); if(wasPrey) sAddHand('prey'); } S.hand.push({hid:S.hid++,id:'coins',n:coins}); msg='Tag Out: recalled '+(a?a.name:'\u2014')+', created '+coins+' Coins.'; break; }
-    case 'coins': { const n=item.n||1; const g=n*(1+nKarma()); S.manaMax+=g; sDelHid(item.hid); msg='Coins: +'+g+' mana gems.'; break; }
-    case 'fading_memories': { sDelHid(item.hid); const f=t[0]; const map={'Ravenous Butcher':'butcher','Escaped Abomination':'abom','Field Musicians':'field_musicians','Prey':'prey'}; let id=null; if(f){ for(const k in map){ if(f.name.indexOf(k)===0){id=map[k];break;} } } if(id){ sAddHand(id); msg='Fading Memories: copied '+f.name+' (Ephemeral) to hand.'; } else msg='Fading Memories: no valid follower.'; break; }
-    case 'thread_needle': { sDelHid(item.hid); const a=t[0], e=t[1]; if(a&&S.board.indexOf(a)>=0){ const pw=a.power; sSpellKill(a); if(e) sSpellDamage(e,pw); msg='Thread the Needle: killed '+a.name+', dealt '+pw+' to '+(e?e.name:'\u2014')+'.'; } else msg='Thread the Needle fizzled.'; break; }
-    case 'absorb_soul': { sDelHid(item.hid); const a=t[0]; if(a){ const d=sSpellDamage(a,4); msg='Absorb Soul: drained 4 from '+a.name+(d?' (killed)':'')+'.'; } break; }
-    case 'lambs_respite': { sDelHid(item.hid); const w=sWeakestAlly(); if(w){ w.keywords=(w.keywords||[]).concat('Respite'); msg="Lamb's Respite: "+w.name+' can\u2019t take damage or die.'; } break; }
-    case 'soul_cleave': { sDelHid(item.hid); const a=t[0]; if(a){ let s=0; const nm=a.name,pw=a.power,hp=a.health,im=sImmune(a); for(let i=0;i<casts;i++){ if(S.board.indexOf(a)>=0&&!im) sSpellKill(a); for(let j=0;j<2;j++){ sSummon(nm,pw,hp,['Lv2','Ephemeral']); s++; } } msg='Soul Cleave on '+nm+': summoned '+s+' Ephemeral copies'+(im?' (Respite \u2192 not killed)':'')+'.'; } break; }
-    case 'go_hard': { sDelHid(item.hid); const tg=t[0]; for(let i=0;i<casts;i++){ sDrain(tg,1); S.goHardCount++; if(S.goHardCount%3===0) S.pybPending=true; } if(S.pybPending){ let n=0; S.hand.forEach(h=>{ if(h.id==='go_hard'){h.id='pack_your_bags';n++;} }); S.pybPending=false; msg='Go Hard \u00d7'+casts+' (drain 1 each). '+n+' Go Hard \u2192 Pack Your Bags!'; } else msg='Go Hard \u00d7'+casts+' (drain 1 each). Casts so far: '+S.goHardCount+'.'; break; }
-    case 'pack_your_bags': { sDelHid(item.hid); for(let i=0;i<casts;i++){ S.enemyBoard.forEach(u=>{u.health-=5;}); S.enemyBoard=S.enemyBoard.filter(u=>u.health>0); S.enemyNexus-=5; } S.hand.forEach(h=>{ if(h.id==='pack_your_bags') h.id='go_hard'; }); msg='Pack Your Bags \u00d7'+casts+': 5 to all enemies + Nexus each.'; break; }
-    case 'darkness': { sDelHid(item.hid); const tg=t[0]; for(let i=0;i<casts;i++) sDrain(tg,2); msg='Darkness \u00d7'+casts+': dealt 2 each.'; break; }
-  }
-  const dmg=prev-S.enemyNexus;
-  log('\u2726 '+msg, dmg>0?'gold':'good');
-  if(dmg>0) nexusHit(dmg);
-  record(msg, dmg>0?'attack':'play', dmg>0?dmg:undefined);
-  render();
-  if(S.enemyNexus<=0){ S.over=true; endScreen(true, S.enemyStart - Math.max(0,S.enemyNexus)); }
-}
-
-/* ===================== REPLAY ===================== */
-function liveTemplate(){return {uid:99999,hid:99999,firstCardPlayed:true,over:true,selecting:null};}
-function showSnapshot(i){const e=REC[i];if(!e)return;S=Object.assign(liveTemplate(),JSON.parse(JSON.stringify(e.s)));render();caption((i+1)+' / '+REC.length+'  ·  '+e.cap);}
-function caption(t){const c=document.getElementById('cap');if(!t){c.classList.remove('show');return;}c.textContent=t;c.classList.add('show');}
-function enterReplay(){if(!REPLAY){LIVE=S;REPLAY=true;document.body.classList.add('replaying');}}
-function exitReplay(){REPLAY=false;document.body.classList.remove('replaying');caption('');S=LIVE;render();}
-async function replayAll(){
-  if(REC.length<2){log('Nothing to replay yet — make some moves first.','bad');return;}
-  enterReplay();
-  for(let i=0;i<REC.length;i++){ showSnapshot(i);
-    if(REC[i].type==='attack'){ const dmg=(REC[i].dmg!==undefined)?REC[i].dmg:(REC[i].s.enemyNexus-(REC[i+1]?REC[i+1].s.enemyNexus:REC[i].s.enemyNexus)); if(dmg>0){await wait(460);nexusHit(dmg);} }
-    await wait(SPEED); if(!REPLAY)return;
-  }
-  caption('Replay complete');await wait(1200);exitReplay();
-}
-
-/* ===================== MENU ===================== */
-function menuArt(p){ if(p.gif) return '<img alt="'+esc(p.name)+'" src="'+esc(p.gif)+'">'; let s=imgSources(p.artCode,p.artSet); if(p.artFallback) s=s.concat(imgSources(p.artFallback,p.artSet)); return '<img alt="'+esc(p.name)+'" data-i="0" data-srcs="'+esc(s.join('|'))+'" src="'+esc(s[0])+'" onerror="imgFail(this)">'; }
-function buildMenu(){ const g=document.getElementById('puzzleGrid');
-  g.innerHTML=PUZZLES.map((p,i)=>'<div class="puzzle-card" data-i="'+i+'"><div class="pa">'+menuArt(p)+'<div class="glow"></div><span class="lvl">'+esc(p.level)+'</span><div class="pinfo"><div class="pname">'+esc(p.name)+'</div><div class="pplay">Play \u25B6</div></div></div></div>').join('');
-  g.querySelectorAll('.puzzle-card').forEach(el=>el.onclick=()=>startPuzzle(PUZZLES[+el.dataset.i])); }
-function startPuzzle(p){ curP=p; document.getElementById('puzzleTitle').textContent=p.name; document.getElementById('menu').classList.remove('show'); if(p.mode==='scripted'){ initScripted(p); } else { CONFIG=p.config; init(); } }
-function showMenu(){ document.getElementById('menu').classList.add('show'); }
-
-/* ===================== MODALS / LOG ===================== */
-function askModal(t,d,o){const ov=document.getElementById('overlay'),m=document.getElementById('modal');
-  m.innerHTML='<h2>'+esc(t)+'</h2><p>'+esc(d)+'</p><div class="row">'+o.map((x,i)=>'<button class="btn '+(x.cls||'')+'" data-i="'+i+'">'+esc(x.label)+'</button>').join('')+'</div>';
-  ov.classList.add('show');m.querySelectorAll('button').forEach(b=>b.onclick=()=>{ov.classList.remove('show');o[+b.dataset.i].fn();});}
-function endScreen(win,total){const ov=document.getElementById('overlay'),m=document.getElementById('modal');
-  m.innerHTML='<div class="banner '+(win?'win':'lose')+'">'+(win?'LETHAL \u2726':'Not enough\u2026')+'</div><p>'+(win?('You dealt '+total+' to the Nexus (now '+S.enemyNexus+'). Puzzle solved!'):('You dealt '+total+'. Enemy Nexus still has '+S.enemyNexus+'.'))+'</p><div class="row"><button class="btn" id="mRep">&#9654; Watch Replay</button><button class="btn ghost" id="mReset">Try Again</button></div>';
-  ov.classList.add('show');
-  document.getElementById('mReset').onclick=()=>{ov.classList.remove('show');if(curP)startPuzzle(curP);};
-  document.getElementById('mRep').onclick=()=>{ov.classList.remove('show');replayAll();};
-  log(win?('\u2605 LETHAL! Nexus at '+S.enemyNexus+'.'):('Attack for '+total+' was not enough.'),win?'good':'bad');}
-function log(t,cls){const l=document.getElementById('log');const p=document.createElement('p');if(cls)p.className=cls;p.textContent=t;l.appendChild(p);l.scrollTop=l.scrollHeight;}
-
-/* ===================== WIRES ===================== */
-document.getElementById('endTurnBtn').onclick=endTurn;
-document.getElementById('attackBtn').onclick=doAttack;
-document.getElementById('resetBtn').onclick=()=>{ if(curP) startPuzzle(curP); };
-document.getElementById('menuBtn').onclick=showMenu;
-document.getElementById('replayBtn').onclick=replayAll;
-document.getElementById('speedSel').onchange=function(){SPEED=parseInt(this.value);};
-document.getElementById('overlay').onclick=(e)=>{if(e.target.id==='overlay')e.target.classList.remove('show');};
-buildMenu();
+fetch('./data/stats.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{STATS=d;init();}).catch(e=>{document.getElementById('content').innerHTML=`<div class="empty-state"><b>Couldn't load stats.json</b>${e}</div>`;});
 </script>
 </body>
 </html>
