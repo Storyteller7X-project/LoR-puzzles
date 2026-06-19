@@ -57,6 +57,7 @@
   .board.foe{border-color:rgba(224,70,58,.22);background:rgba(40,8,8,.18)}
   .board.empty::before{content:attr(data-empty);color:#5f7a72;font-style:italic;font-size:13px}
   .unit.pickable{cursor:crosshair;outline:2px solid var(--gold);outline-offset:2px}.unit.pickable:hover{outline-color:var(--ghost)}
+  .nexus.pickable{cursor:crosshair;outline:2px solid var(--gold);outline-offset:3px;border-radius:10px}.nexus.pickable:hover{outline-color:var(--ghost)}
   /* BATTLEFIELD */
   .battlefield{min-height:96px;border-radius:12px;margin:6px 0;padding:10px;position:relative;
     background:linear-gradient(180deg,rgba(40,8,8,.14),rgba(8,16,16,.18),rgba(20,40,42,.14));
@@ -232,14 +233,15 @@ const SCARDS = {
   butcher:{name:'Ravenous Butcher',type:'unit',cost:0,power:3,health:2,code:'01SI011',set:1,keywords:['Ephemeral']},
   prey:{name:'Prey',type:'unit',cost:0,power:0,health:1,code:null},
   tag_out:{name:'Tag Out',type:'spell',cost:2,code:'07IO020',set:7,text:'Recall an ally; make 2 Coins.'},
-  coins:{name:'Coins',type:'spell',cost:1,code:null,text:'\u00d72 stacked. Karma doubles \u2192 mana gems.'},
+  coins:{name:'Coins',type:'spell',cost:0,code:null,text:'Gain mana gems. Karma doubles.'},
   fading_memories:{name:'Fading Memories',type:'spell',cost:0,code:'01SI047',set:1,text:'Burst. Pick a follower; create an Ephemeral copy in hand.'},
-  thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:'06SI027',set:6},
-  absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:'01SI045',set:1,text:'Absorb allies; level Senna.'},
-  lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:'04SI001',set:4},
-  soul_cleave:{name:'Soul Cleave',type:'spell',cost:3,code:'06SI045',set:6,text:'Kill an ally to summon 2 Ephemeral copies of it. (Senna Lv2 discount: 2 mana.)'},
-  go_hard:{name:'Go Hard',type:'spell',cost:1,code:'03SI016',set:3,text:'Senna Lv2: 0 mana. Pack Your Bags.'},
-  darkness:{name:'Darkness',type:'spell',cost:3,code:'05SI029',set:5,text:'Bait \u2014 unused.'}
+  thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:'06SI027',set:6,text:'Kill an ally to deal its Power to an enemy.'},
+  absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:'01SI045',set:1,text:'Drain 4 from an ally.'},
+  lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:'04SI001',set:4,text:"Weakest ally can't take damage or die this round."},
+  soul_cleave:{name:'Soul Cleave',type:'spell',cost:3,code:'06SI045',set:6,text:'Slow. Kill an ally to summon 2 Ephemeral copies of it.'},
+  go_hard:{name:'Go Hard',type:'spell',cost:1,code:'03SI016',set:3,text:'Slow. Drain 1 from a unit. Every 3rd cast \u2192 Pack Your Bags.'},
+  pack_your_bags:{name:'Pack Your Bags',type:'spell',cost:0,code:'03SI016T1',set:3,text:'Deal 5 to all enemies and the enemy Nexus, then turn back into Go Hard.'},
+  darkness:{name:'Darkness',type:'spell',cost:3,code:'05SI029',set:5,text:'Bait \u2014 deal 2 to a unit or Nexus.'}
 };
 /* Board-unit art lookup (by display name) for the scripted engine */
 const SCODE = {
@@ -391,7 +393,7 @@ function nexusHit(dmg){ const el=document.getElementById('enemyNexusEl'); el.cla
 
 /* ===================== RENDER ===================== */
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function imgSources(code,set){return['https://dd.b.pvp.net/latest/set'+set+'/en_us/img/cards/'+code+'.png','https://dd.b.pvp.net/latest/set'+set+'b/en_us/img/cards/'+code+'.png','https://cdn.mobalytics.gg/assets/lor/cards/set'+set+'/en_us/'+code+'.png'];}
+function imgSources(code,set){const dd='https://dd.b.pvp.net/latest/';const a=[dd+'set'+set+'/en_us/img/cards/'+code+'.png',dd+'set'+set+'b/en_us/img/cards/'+code+'.png','https://cdn.mobalytics.gg/assets/lor/cards/set'+set+'/en_us/'+code+'.png','https://wiki.leagueoflegends.com/en-us/images/'+code+'.png'];if(set===6)a.splice(1,0,dd+'set6cde/en_us/img/cards/'+code+'.png');return a;}
 function imgFail(img){let i=parseInt(img.dataset.i||'0',10)+1;const s=(img.dataset.srcs||'').split('|').filter(Boolean);if(i<s.length){img.dataset.i=i;img.src=s[i];return;}const d=document.createElement('div');d.className='art fallback';d.textContent=img.alt;img.replaceWith(d);}
 function artEl(code,set,name){if(!code)return '<div class="art fallback">'+esc(name)+'</div>';const s=imgSources(code,set);return '<img class="art" loading="lazy" alt="'+esc(name)+'" data-i="0" data-srcs="'+esc(s.join('|'))+'" src="'+esc(s[0])+'" onerror="imgFail(this)">';}
 function kwTags(a){if(!a||!a.length)return '';return '<div class="kw">'+a.map(k=>'<span>'+esc(k)+'</span>').join('')+'</div>';}
@@ -420,18 +422,21 @@ function render(){
   const bd=document.getElementById('board');
   bd.className='board'+(S.board.length?'':' empty');
   bd.innerHTML=S.board.map(u=>unitHTML(u,false)).join('');
+  const eNex=document.getElementById('enemyNexusEl');
+  if(eNex){ eNex.classList.remove('pickable'); eNex.onclick=null; eNex.style.cursor=''; }
   if(S.selecting&&!REPLAY){
     const sel=S.selecting, side=sel.side||'ally', type=sel.type||null;
     const wire=(cont,units,isEnemy)=>{ if((side==='ally'&&isEnemy)||(side==='enemy'&&!isEnemy))return;
       cont.querySelectorAll('.unit').forEach(el=>{ const u=units.find(x=>x.uid==el.dataset.uid); if(!u)return; if(type==='follower'&&u.champ)return;
         el.classList.add('pickable'); el.onclick=()=>{const cb=sel.cb;S.selecting=null;cb(u);render();}; }); };
     wire(bd,S.board,false); wire(eb,S.enemyBoard,true);
+    if(sel.allowNexus&&eNex){ eNex.classList.add('pickable'); eNex.style.cursor='pointer'; eNex.onclick=()=>{const cb=sel.cb;S.selecting=null;cb('nexus');render();}; }
   }
   setTimeout(()=>{S.board.concat(S.enemyBoard).forEach(u=>u.fresh=false);},360);
 
   const hand=document.getElementById('hand');
-  hand.innerHTML=S.hand.map(h=>{const c=(S.scripted?SCARDS:CARDS)[h.id];const afford=S.scripted?(!S.over&&!REPLAY):(canAfford(c)&&!S.selecting&&!REPLAY&&!S.over);const sp=(c.type!=='unit');
-    return '<div class="card '+(afford?'':'disabled')+'" data-hid="'+h.hid+'" title="'+esc(c.text||'')+'"><div class="frame"><div class="cost '+(sp?'spellable':'')+'">'+c.cost+'</div>'+artEl(c.code,c.set,c.name)+kwTags(c.keywords)+((c.type==='unit')?statBadges(c):'')+'</div><div class="nm">'+esc(c.name)+'</div></div>';}).join('');
+  hand.innerHTML=S.hand.map(h=>{const c=(S.scripted?SCARDS:CARDS)[h.id];const afford=S.scripted?(sAfford(h)&&!S.over&&!REPLAY&&!S.selecting):(canAfford(c)&&!S.selecting&&!REPLAY&&!S.over);const sp=(c.type!=='unit');const shownCost=S.scripted?effCost(h):c.cost;
+    return '<div class="card '+(afford?'':'disabled')+'" data-hid="'+h.hid+'" title="'+esc(c.text||'')+'"><div class="frame"><div class="cost '+(sp?'spellable':'')+'">'+shownCost+'</div>'+artEl(c.code,c.set,c.name)+kwTags(c.keywords)+((c.type==='unit')?statBadges(c):'')+'</div><div class="nm">'+esc(c.name)+'</div></div>';}).join('');
   if(!REPLAY) hand.querySelectorAll('.card:not(.disabled)').forEach(el=>el.onclick=()=>(S.scripted?playScripted:playFromHand)(+el.dataset.hid));
 
   const ndc=document.getElementById('nextDrawChip');
@@ -448,6 +453,7 @@ function sMk(name,p,h,kw){const m=SCODE[name];const u={uid:S.uid++,name,power:p,
   if(name==='Field Musicians'){u.fmCount=0;u.keywords=['0/3'];} return u;}
 function sAddHand(id){S.hand.push({hid:S.hid++,id});}
 function sDelHand(id){const i=S.hand.findIndex(x=>x.id===id);if(i>=0)S.hand.splice(i,1);}
+function sDelHid(hid){const i=S.hand.findIndex(x=>x.hid===hid);if(i>=0)S.hand.splice(i,1);}
 function sDelUnit(name){const i=S.board.findIndex(u=>u.name.indexOf(name)===0);if(i>=0)S.board.splice(i,1);}
 function sMana(g,sp){S.manaMax=g;S.manaSpent=0;S.spellMana=sp;}
 function sWeakestAlly(){ return S.board.slice().sort((a,b)=>(a.health-b.health)||(a.power-b.power))[0]; }
@@ -459,7 +465,8 @@ function sSummon(name,p,h,kw){ const u=sMk(name,p,h,kw); S.board.push(u); sField
 function initScripted(p){
   S={uid:1,hid:1,scripted:true,over:false,selecting:null,combat:null,round:0,attackToken:false,nextSummonBuff:0,
      manaMax:p.gems,manaSpent:0,spellMana:p.spell,enemyNexus:p.enemyNexus,myNexus:p.myNexus,enemyStart:p.enemyNexus,
-     board:[],enemyBoard:[],hand:[],stepIdx:0,steps:p.steps,nextDraw:p.nextDraw||null};
+     board:[],enemyBoard:[],hand:[],stepIdx:0,nextDraw:p.nextDraw||null,
+     sennaKills:0,goHardCount:0,pybPending:false};
   CONFIG={enemyNexus:p.enemyNexus,myNexus:p.myNexus};
   (p.ourBoard||[]).forEach(u=>S.board.push(sMk(u.name,u.p,u.h,u.kw)));
   (p.enemyBoard||[]).forEach(u=>S.enemyBoard.push(sMk(u.name,u.p,u.h,u.kw)));
@@ -469,34 +476,77 @@ function initScripted(p){
   document.getElementById('obj').innerHTML='Bring the enemy Nexus from <b>'+p.enemyNexus+'</b> to <b>0</b> this round.';
   record('Starting board','start');
   render();
-  log('Spell-combo lethal (no attack). Play your cards to burn the enemy nexus from '+p.enemyNexus+' to 0.','gold');
+  log('Free play: cast spells in any order and pick any targets. Find the line that burns the Nexus to 0.','gold');
 }
-function applyScriptedStep(step){
-  const prev=S.enemyNexus;
-  step.run();
-  log('\u2726 '+step.cap, S.enemyNexus<prev?'gold':'good');
-  const dmg=prev-S.enemyNexus;
-  if(dmg>0) nexusHit(dmg);
-  S.stepIdx++;
-  record(step.cap, dmg>0?'attack':'play', dmg>0?dmg:undefined);
-  render();
-  if(S.enemyNexus<=0){ S.over=true; endScreen(true, S.enemyStart - Math.max(0,S.enemyNexus)); }
-}
-function sStartPick(step,i){
-  const p=step.picks[i];
-  S.selecting={prompt:p.prompt, side:p.side||'ally', type:p.type||null, cb:(u)=>{
-    if(u && u.name.indexOf(p.name)===0){ if(i+1<step.picks.length) sStartPick(step,i+1); else applyScriptedStep(step); }
-    else { log('That target doesn\u2019t lead to lethal \u2014 try another.','bad'); sStartPick(step,i); }
+/* ---- free-play simulation ---- */
+function nKarma(){ return S.board.filter(u=>u.name.indexOf('Karma')===0).length; }
+function sennaLv2(){ return S.board.some(u=>u.name==='Senna Lv2'); }
+function effCost(item){ const c=SCARDS[item.id]; if(item.id==='pack_your_bags') return 0; let cost=c.cost;
+  if(c.type==='spell' && sennaLv2()) cost=Math.max(0,cost-1);
+  return cost; }
+function sAfford(item){ const c=SCARDS[item.id]; const cost=effCost(item); return c.type==='unit'?manaAvail()>=cost:(manaAvail()+S.spellMana)>=cost; }
+function sPay(item){ const c=SCARDS[item.id]; let n=effCost(item); if(c.type==='unit'){S.manaSpent+=n;return;} const fs=Math.min(S.spellMana,n);S.spellMana-=fs;n-=fs;S.manaSpent+=n; }
+function sImmune(u){ return !!u && (u.keywords||[]).indexOf('Respite')>=0; }
+function sRemove(u){ S.board=S.board.filter(x=>x!==u); S.enemyBoard=S.enemyBoard.filter(x=>x!==u); }
+function sCheckSenna(){ if(S.sennaKills>=3){ const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn&&sn.name!=='Senna Lv2'){ sn.name='Senna Lv2'; sn.power=5; sn.health=5; sn.keywords=['Lv2']; const m=SCODE['Senna Lv2']; if(m){sn.code=m.c;sn.set=m.s;} sn.buffed=true; log('\u2726 Senna levels up \u2192 5/5. Your spells now cost 1 less.','good'); } } }
+function sSpellDamage(u,n){ if(!u||sImmune(u))return false; u.health-=n; if(u.health<=0){ sRemove(u); S.sennaKills++; sCheckSenna(); return true; } return false; }
+function sSpellKill(u){ if(!u||sImmune(u))return false; sRemove(u); S.sennaKills++; sCheckSenna(); return true; }
+function sDrain(t,n){ if(t==='nexus'){ S.enemyNexus-=n; } else if(t){ sSpellDamage(t,n); } S.myNexus=Math.min(CONFIG.myNexus,S.myNexus+n); }
+
+const PLAYSPEC = {
+  tag_out:{target:[{side:'ally',prompt:'Tag Out \u2014 recall an ally'}]},
+  fading_memories:{target:[{side:'both',type:'follower',prompt:'Fading Memories \u2014 pick a follower'}]},
+  butcher:{target:[{side:'ally',prompt:'Ravenous Butcher \u2014 sacrifice an ally'}]},
+  thread_needle:{target:[{side:'ally',prompt:'Thread the Needle \u2014 kill an ally'},{side:'enemy',prompt:'Thread the Needle \u2014 deal its Power to an enemy'}]},
+  absorb_soul:{target:[{side:'ally',prompt:'Absorb Soul \u2014 drain 4 from an ally'}]},
+  soul_cleave:{target:[{side:'ally',prompt:'Soul Cleave \u2014 target an ally'}]},
+  go_hard:{target:[{side:'both',allowNexus:true,prompt:'Go Hard \u2014 drain 1 (pick a unit or the enemy Nexus)'}]},
+  darkness:{target:[{side:'both',allowNexus:true,prompt:'Darkness \u2014 deal 2 (pick a unit or the enemy Nexus)'}]}
+};
+function sPickThen(item,spec,i,acc){
+  const t=spec.target[i];
+  S.selecting={prompt:t.prompt, side:t.side||'ally', type:t.type||null, allowNexus:!!t.allowNexus, cb:(u)=>{
+    acc.push(u);
+    if(i+1<spec.target.length) sPickThen(item,spec,i+1,acc);
+    else sResolve(item,acc);
   }};
-  log('\u25B6 '+p.prompt+' \u2014 pick a target.','gold'); render();
+  log('\u25B6 '+t.prompt,'gold'); render();
 }
 function playScripted(hid){
   if(S.over||REPLAY||S.selecting) return;
-  const h=S.hand.find(x=>x.hid===hid); if(!h) return;
-  const step=S.steps[S.stepIdx]; if(!step) return;
-  if(h.id!==step.card){ log('That is not the next step of the line.','bad'); return; }
-  if(step.picks){ sStartPick(step,0); return; }
-  applyScriptedStep(step);
+  const item=S.hand.find(x=>x.hid===hid); if(!item) return;
+  const c=SCARDS[item.id]; if(!c) return;
+  if(!sAfford(item)){ log('Not enough mana for '+c.name+'.','bad'); return; }
+  const spec=PLAYSPEC[item.id];
+  if(spec&&spec.target){ sPickThen(item,spec,0,[]); }
+  else sResolve(item,[]);
+}
+function sResolve(item,t){
+  const c=SCARDS[item.id];
+  sPay(item);
+  const casts=(c.type==='unit')?1:(nKarma()+1);
+  const prev=S.enemyNexus; let msg=c.name+'.';
+  switch(item.id){
+    case 'karma': sDelHid(item.hid); sSummon('Karma Lv2',5,4,['Lv2']); msg='Karma Lv2 summoned (5/4).'; break;
+    case 'prey': sDelHid(item.hid); sSummon('Prey',0,1); msg='Prey summoned.'; break;
+    case 'butcher': { sDelHid(item.hid); const a=t[0]; if(a) sRemove(a); sSummon('Ravenous Butcher',3,2,['Ephemeral']); msg='Ravenous Butcher summoned (sacrificed '+(a?a.name:'\u2014')+').'; break; }
+    case 'tag_out': { sDelHid(item.hid); const a=t[0]; const coins=1+nKarma(); if(a){ const wasPrey=a.name.indexOf('Prey')===0; sRemove(a); if(wasPrey) sAddHand('prey'); } S.hand.push({hid:S.hid++,id:'coins',n:coins}); msg='Tag Out: recalled '+(a?a.name:'\u2014')+', created '+coins+' Coins.'; break; }
+    case 'coins': { const n=item.n||1; const g=n*(1+nKarma()); S.manaMax+=g; sDelHid(item.hid); msg='Coins: +'+g+' mana gems.'; break; }
+    case 'fading_memories': { sDelHid(item.hid); const f=t[0]; const map={'Ravenous Butcher':'butcher','Escaped Abomination':'abom','Field Musicians':'field_musicians','Prey':'prey'}; let id=null; if(f){ for(const k in map){ if(f.name.indexOf(k)===0){id=map[k];break;} } } if(id){ sAddHand(id); msg='Fading Memories: copied '+f.name+' (Ephemeral) to hand.'; } else msg='Fading Memories: no valid follower.'; break; }
+    case 'thread_needle': { sDelHid(item.hid); const a=t[0], e=t[1]; if(a&&S.board.indexOf(a)>=0){ const pw=a.power; sSpellKill(a); if(e) sSpellDamage(e,pw); msg='Thread the Needle: killed '+a.name+', dealt '+pw+' to '+(e?e.name:'\u2014')+'.'; } else msg='Thread the Needle fizzled.'; break; }
+    case 'absorb_soul': { sDelHid(item.hid); const a=t[0]; if(a){ const d=sSpellDamage(a,4); msg='Absorb Soul: drained 4 from '+a.name+(d?' (killed)':'')+'.'; } break; }
+    case 'lambs_respite': { sDelHid(item.hid); const w=sWeakestAlly(); if(w){ w.keywords=(w.keywords||[]).concat('Respite'); msg="Lamb's Respite: "+w.name+' can\u2019t take damage or die.'; } break; }
+    case 'soul_cleave': { sDelHid(item.hid); const a=t[0]; if(a){ let s=0; const nm=a.name,pw=a.power,hp=a.health,im=sImmune(a); for(let i=0;i<casts;i++){ if(S.board.indexOf(a)>=0&&!im) sSpellKill(a); for(let j=0;j<2;j++){ sSummon(nm,pw,hp,['Lv2','Ephemeral']); s++; } } msg='Soul Cleave on '+nm+': summoned '+s+' Ephemeral copies'+(im?' (Respite \u2192 not killed)':'')+'.'; } break; }
+    case 'go_hard': { sDelHid(item.hid); const tg=t[0]; for(let i=0;i<casts;i++){ sDrain(tg,1); S.goHardCount++; if(S.goHardCount%3===0) S.pybPending=true; } if(S.pybPending){ let n=0; S.hand.forEach(h=>{ if(h.id==='go_hard'){h.id='pack_your_bags';n++;} }); S.pybPending=false; msg='Go Hard \u00d7'+casts+' (drain 1 each). '+n+' Go Hard \u2192 Pack Your Bags!'; } else msg='Go Hard \u00d7'+casts+' (drain 1 each). Casts so far: '+S.goHardCount+'.'; break; }
+    case 'pack_your_bags': { sDelHid(item.hid); for(let i=0;i<casts;i++){ S.enemyBoard.forEach(u=>{u.health-=5;}); S.enemyBoard=S.enemyBoard.filter(u=>u.health>0); S.enemyNexus-=5; } S.hand.forEach(h=>{ if(h.id==='pack_your_bags') h.id='go_hard'; }); msg='Pack Your Bags \u00d7'+casts+': 5 to all enemies + Nexus each.'; break; }
+    case 'darkness': { sDelHid(item.hid); const tg=t[0]; for(let i=0;i<casts;i++) sDrain(tg,2); msg='Darkness \u00d7'+casts+': dealt 2 each.'; break; }
+  }
+  const dmg=prev-S.enemyNexus;
+  log('\u2726 '+msg, dmg>0?'gold':'good');
+  if(dmg>0) nexusHit(dmg);
+  record(msg, dmg>0?'attack':'play', dmg>0?dmg:undefined);
+  render();
+  if(S.enemyNexus<=0){ S.over=true; endScreen(true, S.enemyStart - Math.max(0,S.enemyNexus)); }
 }
 
 /* ===================== REPLAY ===================== */
