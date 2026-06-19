@@ -56,7 +56,7 @@
   .board{min-height:120px;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;border:1px dashed rgba(126,249,214,.14);border-radius:12px;padding:12px;background:rgba(0,0,0,.18);position:relative}
   .board.foe{border-color:rgba(224,70,58,.22);background:rgba(40,8,8,.18)}
   .board.empty::before{content:attr(data-empty);color:#5f7a72;font-style:italic;font-size:13px}
-  .board.selectable .unit{cursor:crosshair}.board.selectable .unit:hover{outline:2px solid var(--blood);outline-offset:2px}
+  .unit.pickable{cursor:crosshair;outline:2px solid var(--gold);outline-offset:2px}.unit.pickable:hover{outline-color:var(--ghost)}
   /* BATTLEFIELD */
   .battlefield{min-height:96px;border-radius:12px;margin:6px 0;padding:10px;position:relative;
     background:linear-gradient(180deg,rgba(40,8,8,.14),rgba(8,16,16,.18),rgba(20,40,42,.14));
@@ -228,11 +228,11 @@ const SCARDS = {
   senna:{name:'Senna',type:'unit',cost:5,power:4,health:4,code:'05SI009',set:5},
   field_musicians:{name:'Field Musicians',type:'unit',cost:4,power:1,health:4,code:'04IO001',set:4,keywords:['1/3']},
   abom:{name:'Escaped Abomination',type:'unit',cost:0,power:4,health:3,code:'01SI048T1',set:1},
-  butcher:{name:'Ravenous Butcher',type:'unit',cost:0,power:3,health:2,code:'01SI011',set:1},
+  butcher:{name:'Ravenous Butcher',type:'unit',cost:0,power:3,health:2,code:'01SI011',set:1,keywords:['Ephemeral']},
   prey:{name:'Prey',type:'unit',cost:0,power:0,health:1,code:null},
   tag_out:{name:'Tag Out',type:'spell',cost:2,code:'07IO020',set:7,text:'Recall an ally; make 2 Coins.'},
   coins:{name:'Coins',type:'spell',cost:1,code:null,text:'\u00d72 stacked. Karma doubles \u2192 mana gems.'},
-  fading_memories:{name:'Fading Memories',type:'spell',cost:3,code:'01SI047',set:1,text:'Create a copy of a unit.'},
+  fading_memories:{name:'Fading Memories',type:'spell',cost:0,code:'01SI047',set:1,text:'Burst. Pick a follower; create an Ephemeral copy in hand.'},
   thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:'06SI027',set:6},
   absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:'01SI045',set:1,text:'Absorb allies; level Senna.'},
   lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:'04SI001',set:4},
@@ -268,19 +268,20 @@ const PUZZLES = [
     id:'normal', level:'Normal', name:'Karma Combo OTK', mode:'scripted',
     gif:'', artCode:'01IO041', artSet:1,  /* Karma art (base; level-2 code unverified) */
     enemyNexus:20, myNexus:20, gems:5, spell:3,
-    ourBoard:[ {name:'Prey',p:0,h:1}, {name:'Field Musicians',p:1,h:4,kw:['1/3']}, {name:'Senna',p:4,h:4,kw:['Quick Attack','0/3']} ],
+    ourBoard:[ {name:'Prey',p:0,h:1}, {name:'Field Musicians',p:1,h:4}, {name:'Senna',p:4,h:4,kw:['Quick Attack','0/3']} ],
     enemyBoard:[ {name:'Ravenous Butcher',p:3,h:2}, {name:'Escaped Abomination',p:4,h:3} ],
     hand:['karma','tag_out','fading_memories','thread_needle','absorb_soul','lambs_respite','go_hard','go_hard','go_hard','darkness'],
     steps:[
-      {card:'karma',cap:'Play Karma for 5 \u2014 it levels up (turn 10+). Field Musicians 2/3. 3 spell mana left.',run:()=>{ sDelHand('karma'); S.board.push(sMk('Karma Lv2',5,4,['Lv2'])); const fm=S.board.find(u=>u.name.indexOf('Field')===0); if(fm)fm.keywords=['2/3']; sMana(0,3); }},
-      {card:'tag_out',pick:'Prey',prompt:'Tag Out \u2014 recall an ally',cap:'Tag Out the Prey (recalled). Karma Lv2 makes 2 Coins (stacked). 1 spell mana left.',run:()=>{ sDelHand('tag_out'); sDelUnit('Prey'); sAddHand('prey'); sAddHand('coins'); sMana(0,1); }},
+      {card:'karma',cap:'Play Karma for 5 \u2014 it levels up (turn 10+). 3 spell mana left.',run:()=>{ sDelHand('karma'); sSummon('Karma Lv2',5,4,['Lv2']); sMana(0,3); }},
+      {card:'tag_out',picks:[{side:'ally',name:'Prey',prompt:'Tag Out \u2014 recall an ally'}],cap:'Tag Out the Prey (recalled). Karma Lv2 makes 2 Coins (stacked). 1 spell mana left.',run:()=>{ sDelHand('tag_out'); sDelUnit('Prey'); sAddHand('prey'); sAddHand('coins'); sMana(0,1); }},
       {card:'coins',cap:'Spend the last spell mana on Coins; Karma doubles them \u2192 4 mana gems.',run:()=>{ sDelHand('coins'); sMana(4,0); }},
-      {card:'prey',cap:'Replay the Prey for 0.',run:()=>{ sDelHand('prey'); S.board.push(sMk('Prey',0,1)); }},
-      {card:'fading_memories',cap:'Fading Memories copies their Ravenous Butcher \u2014 play it by killing the Prey. Field Musicians activates: +3 spell mana & draw Soul Cleave. 7 mana.',run:()=>{ sDelHand('fading_memories'); sDelUnit('Prey'); S.board.push(sMk('Ravenous Butcher',3,2)); const fm=S.board.find(u=>u.name.indexOf('Field')===0); if(fm)fm.keywords=['Active']; sAddHand('soul_cleave'); sMana(4,3); }},
-      {card:'thread_needle',cap:'Thread the Needle on our Butcher & their Escaped Abomination. Senna level-up 2/3. 5 mana.',run:()=>{ sDelHand('thread_needle'); const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn){sn.keywords=['Quick Attack','2/3'];} sMana(4,1); }},
-      {card:'absorb_soul',cap:'Absorb Soul on Field Musicians \u2192 Senna levels up. Board: Senna Lv2 + Karma Lv2. 4 mana.',run:()=>{ sDelHand('absorb_soul'); S.board=S.board.filter(u=>u.name.indexOf('Senna')===0||u.name.indexOf('Karma')===0); const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn){sn.name='Senna Lv2';sn.power=5;sn.health=5;sn.keywords=['Lv2'];} sMana(4,0); }},
-      {card:'lambs_respite',cap:"Lamb's Respite on Karma Lv2 (5/4). 2 mana.",run:()=>{ sDelHand('lambs_respite'); const k=S.board.find(u=>u.name.indexOf('Karma')===0); if(k)k.keywords=['Lv2','Respite']; sMana(2,0); }},
-      {card:'soul_cleave',cap:'Soul Cleave on Karma (Senna Lv2 discount \u2192 2). Board: 1 Senna + 5 Karma. 0 mana.',run:()=>{ sDelHand('soul_cleave'); for(let i=0;i<4;i++) S.board.push(sMk('Karma Lv2',5,4,['Lv2'])); sMana(0,0); }},
+      {card:'prey',cap:'Replay the Prey for 0.',run:()=>{ sDelHand('prey'); sSummon('Prey',0,1); }},
+      {card:'fading_memories',picks:[{side:'both',type:'follower',name:'Ravenous Butcher',prompt:'Fading Memories \u2014 pick a follower'}],cap:'Fading Memories: copy a follower (Ephemeral) into hand. 0 mana.',run:()=>{ sDelHand('fading_memories'); sAddHand('butcher'); sMana(4,0); }},
+      {card:'butcher',picks:[{side:'ally',name:'Prey',prompt:'Ravenous Butcher \u2014 kill an ally to play it'}],cap:'Play the Butcher, killing an ally. (3rd summon \u2192 Field Musicians activates: spell mana + Soul Cleave.)',run:()=>{ sDelHand('butcher'); sDelUnit('Prey'); sSummon('Ravenous Butcher',3,2); }},
+      {card:'thread_needle',picks:[{side:'ally',name:'Ravenous Butcher',prompt:'Thread the Needle \u2014 kill an ally'},{side:'enemy',name:'Escaped Abomination',prompt:'Thread the Needle \u2014 deal its Power to an enemy'}],cap:'Thread the Needle: kill our Butcher, deal 3 to their Abomination. Senna level-up 2/3. 5 mana.',run:()=>{ sDelHand('thread_needle'); sDelUnit('Ravenous Butcher'); const ab=S.enemyBoard.find(u=>u.name.indexOf('Escaped')===0); if(ab){ab.health-=3; if(ab.health<=0)S.enemyBoard=S.enemyBoard.filter(u=>u!==ab);} const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn)sn.keywords=['Quick Attack','2/3']; sMana(4,1); }},
+      {card:'absorb_soul',picks:[{side:'ally',name:'Field Musicians',prompt:'Absorb Soul \u2014 drain 4 from an ally'}],cap:'Absorb Soul on Field Musicians \u2192 Senna levels up. Board: Senna Lv2 + Karma Lv2. 4 mana.',run:()=>{ sDelHand('absorb_soul'); S.board=S.board.filter(u=>u.name.indexOf('Senna')===0||u.name.indexOf('Karma')===0); const sn=S.board.find(u=>u.name.indexOf('Senna')===0); if(sn){sn.name='Senna Lv2';sn.power=5;sn.health=5;sn.keywords=['Lv2'];} sMana(4,0); }},
+      {card:'lambs_respite',cap:"Lamb's Respite \u2192 weakest ally (here Karma 5/4). 2 mana.",run:()=>{ sDelHand('lambs_respite'); const w=sWeakestAlly(); if(w)w.keywords=(w.keywords||[]).concat('Respite'); sMana(2,0); }},
+      {card:'soul_cleave',picks:[{side:'ally',name:'Karma',prompt:'Soul Cleave \u2014 target an ally'}],cap:'Soul Cleave on Karma (Lamb\u2019s Respite \u2192 copies). Board: 1 Senna + 5 Karma. 0 mana.',run:()=>{ sDelHand('soul_cleave'); for(let i=0;i<4;i++) sSummon('Karma Lv2',5,4,['Lv2']); sMana(0,0); }},
       {card:'go_hard',cap:'Go Hard #1 (0 mana). It casts 6\u00d7: 1 Pack Your Bags. Enemy 20 \u2192 15.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=15; }},
       {card:'go_hard',cap:'Go Hard #2. 2 Pack Your Bags. Enemy 15 \u2192 5.',run:()=>{ sDelHand('go_hard'); S.enemyNexus=5; }},
       {card:'go_hard',cap:'Go Hard #3. 1 Pack Your Bags. Enemy 5 \u2192 0. LETHAL!',run:()=>{ sDelHand('go_hard'); S.enemyNexus=0; }}
@@ -416,9 +417,15 @@ function render(){
   } else { bf.className='battlefield empty'; bf.innerHTML=''; }
 
   const bd=document.getElementById('board');
-  bd.className='board'+(S.board.length?'':' empty')+(S.selecting?' selectable':'');
+  bd.className='board'+(S.board.length?'':' empty');
   bd.innerHTML=S.board.map(u=>unitHTML(u,false)).join('');
-  if(S.selecting&&!REPLAY) bd.querySelectorAll('.unit').forEach(el=>el.onclick=()=>{const u=S.board.find(x=>x.uid==el.dataset.uid);const cb=S.selecting.cb;S.selecting=null;cb(u);render();});
+  if(S.selecting&&!REPLAY){
+    const sel=S.selecting, side=sel.side||'ally', type=sel.type||null;
+    const wire=(cont,units,isEnemy)=>{ if((side==='ally'&&isEnemy)||(side==='enemy'&&!isEnemy))return;
+      cont.querySelectorAll('.unit').forEach(el=>{ const u=units.find(x=>x.uid==el.dataset.uid); if(!u)return; if(type==='follower'&&u.champ)return;
+        el.classList.add('pickable'); el.onclick=()=>{const cb=sel.cb;S.selecting=null;cb(u);render();}; }); };
+    wire(bd,S.board,false); wire(eb,S.enemyBoard,true);
+  }
   setTimeout(()=>{S.board.concat(S.enemyBoard).forEach(u=>u.fresh=false);},360);
 
   const hand=document.getElementById('hand');
@@ -432,11 +439,18 @@ function render(){
 }
 
 /* ===================== SCRIPTED PUZZLE ENGINE ===================== */
-function sMk(name,p,h,kw){const m=SCODE[name];return {uid:S.uid++,name,power:p,health:h,code:m?m.c:null,set:m?m.s:0,keywords:kw||[],fresh:true};}
+function sMk(name,p,h,kw){const m=SCODE[name];const u={uid:S.uid++,name,power:p,health:h,code:m?m.c:null,set:m?m.s:0,keywords:kw||[],champ:/^(Karma|Senna)/.test(name),fresh:true};
+  if(name==='Field Musicians'){u.fmCount=0;u.keywords=['0/3'];} return u;}
 function sAddHand(id){S.hand.push({hid:S.hid++,id});}
 function sDelHand(id){const i=S.hand.findIndex(x=>x.id===id);if(i>=0)S.hand.splice(i,1);}
 function sDelUnit(name){const i=S.board.findIndex(u=>u.name.indexOf(name)===0);if(i>=0)S.board.splice(i,1);}
 function sMana(g,sp){S.manaMax=g;S.manaSpent=0;S.spellMana=sp;}
+function sWeakestAlly(){ return S.board.slice().sort((a,b)=>(a.health-b.health)||(a.power-b.power))[0]; }
+function sFieldTick(){ const fm=S.board.find(x=>x.name.indexOf('Field')===0 && typeof x.fmCount==='number'); if(!fm)return;
+  fm.fmCount++;
+  if(fm.fmCount>=3){ fm.keywords=(fm.keywords||[]).filter(k=>!/\/3$/.test(k)); fm.fmCount=null; S.spellMana=3; sAddHand('soul_cleave'); log('\u266a Field Musicians activates: spell mana refilled & drew Soul Cleave.','good'); }
+  else { fm.keywords=[fm.fmCount+'/3']; } }
+function sSummon(name,p,h,kw){ const u=sMk(name,p,h,kw); S.board.push(u); sFieldTick(); return u; }
 function initScripted(p){
   S={uid:1,hid:1,scripted:true,over:false,selecting:null,combat:null,round:0,attackToken:false,nextSummonBuff:0,
      manaMax:p.gems,manaSpent:0,spellMana:p.spell,enemyNexus:p.enemyNexus,myNexus:p.myNexus,enemyStart:p.enemyNexus,
@@ -463,20 +477,20 @@ function applyScriptedStep(step){
   render();
   if(S.enemyNexus<=0){ S.over=true; endScreen(true, S.enemyStart - Math.max(0,S.enemyNexus)); }
 }
+function sStartPick(step,i){
+  const p=step.picks[i];
+  S.selecting={prompt:p.prompt, side:p.side||'ally', type:p.type||null, cb:(u)=>{
+    if(u && u.name.indexOf(p.name)===0){ if(i+1<step.picks.length) sStartPick(step,i+1); else applyScriptedStep(step); }
+    else { log('That target doesn\u2019t lead to lethal \u2014 try another.','bad'); sStartPick(step,i); }
+  }};
+  log('\u25B6 '+p.prompt+' \u2014 pick a target.','gold'); render();
+}
 function playScripted(hid){
   if(S.over||REPLAY||S.selecting) return;
   const h=S.hand.find(x=>x.hid===hid); if(!h) return;
   const step=S.steps[S.stepIdx]; if(!step) return;
   if(h.id!==step.card){ log('That is not the next step of the line.','bad'); return; }
-  if(step.pick){
-    const ask=()=>{ S.selecting={prompt:step.prompt, cb:(u)=>{
-        if(u && u.name.indexOf(step.pick)===0){ applyScriptedStep(step); }
-        else { log((step.prompt||'Choose a target')+': pick the '+step.pick+'.','bad'); ask(); }
-      }};
-      log('\u25B6 '+(step.prompt||'Choose a target')+' \u2014 click a unit on your board.','gold'); render();
-    };
-    ask(); return;
-  }
+  if(step.picks){ sStartPick(step,0); return; }
   applyScriptedStep(step);
 }
 
