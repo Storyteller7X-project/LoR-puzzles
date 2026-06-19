@@ -159,7 +159,7 @@
   <header>
     <div class="kicker">Legends of Runeterra &middot; Lethal Puzzle</div>
     <h1 id="puzzleTitle">Beginner's puzzle</h1>
-    <div class="obj">Bring the enemy Nexus from <b id="goalHp">13</b> to <b>0</b> by the end of round 2. You only attack on round 2.</div>
+    <div class="obj" id="obj">Bring the enemy Nexus from <b>13</b> to <b>0</b> by the end of round 2. You only attack on round 2.</div>
   </header>
 
   <div class="nexus-row">
@@ -222,25 +222,32 @@ const CARDS = {
   prey:{name:'Prey',code:'04SI004T3',set:4,type:'unit',cost:0,power:0,health:1,text:'',token:true}
 };
 
-/* Scripted-puzzle cards — text only, no art (code:null) */
+/* Scripted-puzzle cards — real Data Dragon codes (tokens stay text) */
 const SCARDS = {
-  karma:{name:'Karma Lv2',type:'unit',cost:5,power:5,health:4,code:null,keywords:['Lv2']},
-  senna:{name:'Senna',type:'unit',cost:0,power:0,health:3,code:null},
-  field_musicians:{name:'Field Musicians',type:'unit',cost:0,power:0,health:3,code:null,keywords:['1/3']},
-  abom:{name:'Escaped Abomination',type:'unit',cost:0,power:4,health:3,code:null},
-  butcher:{name:'Ravenous Butcher',type:'unit',cost:0,power:3,health:2,code:null},
-  xolaani:{name:'Xolaani',type:'unit',cost:0,power:7,health:7,code:null},
-  nasus:{name:'Nasus Lv2',type:'unit',cost:0,power:15,health:15,code:null,keywords:['Lv2']},
+  karma:{name:'Karma Lv2',type:'unit',cost:5,power:5,health:4,code:'01IO041',set:1,keywords:['Lv2']},
+  senna:{name:'Senna',type:'unit',cost:5,power:4,health:4,code:'05SI009',set:5},
+  field_musicians:{name:'Field Musicians',type:'unit',cost:4,power:1,health:4,code:'04IO001',set:4,keywords:['1/3']},
+  abom:{name:'Escaped Abomination',type:'unit',cost:0,power:4,health:3,code:'01SI048T1',set:1},
+  butcher:{name:'Ravenous Butcher',type:'unit',cost:0,power:3,health:2,code:'01SI011',set:1},
   prey:{name:'Prey',type:'unit',cost:0,power:0,health:1,code:null},
-  tag_out:{name:'Tag Out',type:'spell',cost:2,code:null,text:'Recall an ally; make 2 Coins.'},
+  tag_out:{name:'Tag Out',type:'spell',cost:2,code:'07IO020',set:7,text:'Recall an ally; make 2 Coins.'},
   coins:{name:'Coins',type:'spell',cost:0,code:null,text:'Karma doubles \u2192 mana gems.'},
-  fading_memories:{name:'Fading Memories',type:'spell',cost:3,code:null,text:'Create a copy of a unit.'},
-  thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:null},
-  absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:null,text:'Absorb allies; level Senna.'},
-  lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:null},
-  soul_cleave:{name:'Soul Cleave',type:'spell',cost:4,code:null,text:'Senna Lv2 discount: 2 mana.'},
-  go_hard:{name:'Go Hard',type:'spell',cost:1,code:null,text:'Senna Lv2: 0 mana. Pack Your Bags.'},
-  darkness:{name:'Darkness',type:'spell',cost:4,code:null,text:'Bait \u2014 unused.'}
+  fading_memories:{name:'Fading Memories',type:'spell',cost:3,code:'01SI047',set:1,text:'Create a copy of a unit.'},
+  thread_needle:{name:'Thread the Needle',type:'spell',cost:2,code:'06SI027',set:6},
+  absorb_soul:{name:'Absorb Soul',type:'spell',cost:1,code:'01SI045',set:1,text:'Absorb allies; level Senna.'},
+  lambs_respite:{name:"Lamb's Respite",type:'spell',cost:2,code:'04SI001',set:4},
+  soul_cleave:{name:'Soul Cleave',type:'spell',cost:4,code:'06SI045',set:6,text:'Senna Lv2 discount: 2 mana.'},
+  go_hard:{name:'Go Hard',type:'spell',cost:1,code:'03SI016',set:3,text:'Senna Lv2: 0 mana. Pack Your Bags.'},
+  darkness:{name:'Darkness',type:'spell',cost:4,code:'05SI029',set:5,text:'Bait \u2014 unused.'}
+};
+/* Board-unit art lookup (by display name) for the scripted engine */
+const SCODE = {
+  'Prey':null,
+  'Field Musicians':{c:'04IO001',s:4},
+  'Senna':{c:'05SI009',s:5}, 'Senna Lv2':{c:'05SI009',s:5},
+  'Karma Lv2':{c:'01IO041',s:1},
+  'Ravenous Butcher':{c:'01SI011',s:1},
+  'Escaped Abomination':{c:'01SI048T1',s:1}
 };
 
 /* ===================== PUZZLES (level select) ===================== */
@@ -259,7 +266,7 @@ const PUZZLES = [
   },
   {
     id:'normal', level:'Normal', name:'Karma Combo OTK', mode:'scripted',
-    gif:'', artCode:'01SI011', artSet:1,
+    gif:'', artCode:'01IO041T3', artSet:1, artFallback:'01IO041',  /* Karma level 2 art (falls back to base Karma) */
     enemyNexus:20, myNexus:20, gems:5, spell:3,
     ourBoard:[ {name:'Prey',p:0,h:1}, {name:'Field Musicians',p:1,h:4,kw:['1/3']}, {name:'Senna',p:4,h:4,kw:['Quick Attack','0/3']} ],
     enemyBoard:[ {name:'Ravenous Butcher',p:3,h:2}, {name:'Escaped Abomination',p:4,h:3} ],
@@ -294,7 +301,7 @@ function init(){
   expand(CONFIG.enemyBoard).forEach(id=>S.enemyBoard.push(newUnit(id)));
   REC=[];REPLAY=false;LIVE=null;
   document.getElementById('log').innerHTML='';
-  document.getElementById('goalHp').textContent=CONFIG.enemyNexus;
+  document.getElementById('obj').innerHTML='Bring the enemy Nexus from <b>'+CONFIG.enemyNexus+'</b> to <b>0</b> by the end of round 2. You only attack on round 2.';
   startRound(0); record('Starting board','start');
   log('Puzzle started. Goal: '+CONFIG.enemyNexus+' damage by end of round 2.','gold');
 }
@@ -382,7 +389,7 @@ function nexusHit(dmg){ const el=document.getElementById('enemyNexusEl'); el.cla
 
 /* ===================== RENDER ===================== */
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function imgSources(code,set){return['https://dd.b.pvp.net/latest/set'+set+'/en_us/img/cards/'+code+'.png','https://cdn.mobalytics.gg/assets/lor/cards/set'+set+'/en_us/'+code+'.png'];}
+function imgSources(code,set){return['https://dd.b.pvp.net/latest/set'+set+'/en_us/img/cards/'+code+'.png','https://dd.b.pvp.net/latest/set'+set+'b/en_us/img/cards/'+code+'.png','https://cdn.mobalytics.gg/assets/lor/cards/set'+set+'/en_us/'+code+'.png'];}
 function imgFail(img){let i=parseInt(img.dataset.i||'0',10)+1;const s=(img.dataset.srcs||'').split('|').filter(Boolean);if(i<s.length){img.dataset.i=i;img.src=s[i];return;}const d=document.createElement('div');d.className='art fallback';d.textContent=img.alt;img.replaceWith(d);}
 function artEl(code,set,name){if(!code)return '<div class="art fallback">'+esc(name)+'</div>';const s=imgSources(code,set);return '<img class="art" loading="lazy" alt="'+esc(name)+'" data-i="0" data-srcs="'+esc(s.join('|'))+'" src="'+esc(s[0])+'" onerror="imgFail(this)">';}
 function kwTags(a){if(!a||!a.length)return '';return '<div class="kw">'+a.map(k=>'<span>'+esc(k)+'</span>').join('')+'</div>';}
@@ -425,7 +432,7 @@ function render(){
 }
 
 /* ===================== SCRIPTED PUZZLE ENGINE ===================== */
-function sMk(name,p,h,kw){return {uid:S.uid++,name,power:p,health:h,code:null,keywords:kw||[],fresh:true};}
+function sMk(name,p,h,kw){const m=SCODE[name];return {uid:S.uid++,name,power:p,health:h,code:m?m.c:null,set:m?m.s:0,keywords:kw||[],fresh:true};}
 function sAddHand(id){S.hand.push({hid:S.hid++,id});}
 function sDelHand(id){const i=S.hand.findIndex(x=>x.id===id);if(i>=0)S.hand.splice(i,1);}
 function sDelUnit(name){const i=S.board.findIndex(u=>u.name.indexOf(name)===0);if(i>=0)S.board.splice(i,1);}
@@ -440,10 +447,10 @@ function initScripted(p){
   (p.hand||[]).forEach(id=>S.hand.push({hid:S.hid++,id}));
   REC=[];REPLAY=false;LIVE=null;
   document.getElementById('log').innerHTML='';
-  document.getElementById('goalHp').textContent=p.enemyNexus;
+  document.getElementById('obj').innerHTML='Bring the enemy Nexus from <b>'+p.enemyNexus+'</b> to <b>0</b> this round.';
   record('Starting board','start');
   render();
-  log('Spell-combo lethal (no attack). Play the line to burn the Nexus from '+p.enemyNexus+' to 0.','gold');
+  log('Spell-combo lethal (no attack). Play your cards to burn the enemy nexus from '+p.enemyNexus+' to 0.','gold');
 }
 function playScripted(hid){
   if(S.over||REPLAY) return;
@@ -478,7 +485,7 @@ async function replayAll(){
 }
 
 /* ===================== MENU ===================== */
-function menuArt(p){ if(p.gif) return '<img alt="'+esc(p.name)+'" src="'+esc(p.gif)+'">'; const s=imgSources(p.artCode,p.artSet); return '<img alt="'+esc(p.name)+'" data-i="0" data-srcs="'+esc(s.join('|'))+'" src="'+esc(s[0])+'" onerror="imgFail(this)">'; }
+function menuArt(p){ if(p.gif) return '<img alt="'+esc(p.name)+'" src="'+esc(p.gif)+'">'; let s=imgSources(p.artCode,p.artSet); if(p.artFallback) s=s.concat(imgSources(p.artFallback,p.artSet)); return '<img alt="'+esc(p.name)+'" data-i="0" data-srcs="'+esc(s.join('|'))+'" src="'+esc(s[0])+'" onerror="imgFail(this)">'; }
 function buildMenu(){ const g=document.getElementById('puzzleGrid');
   g.innerHTML=PUZZLES.map((p,i)=>'<div class="puzzle-card" data-i="'+i+'"><div class="pa">'+menuArt(p)+'<div class="glow"></div><span class="lvl">'+esc(p.level)+'</span><div class="pinfo"><div class="pname">'+esc(p.name)+'</div><div class="pplay">Play \u25B6</div></div></div></div>').join('');
   g.querySelectorAll('.puzzle-card').forEach(el=>el.onclick=()=>startPuzzle(PUZZLES[+el.dataset.i])); }
